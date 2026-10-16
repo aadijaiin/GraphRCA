@@ -37,8 +37,10 @@ def investigate(graph, alert_id, backend=None, emit=None, save_run=True):
 
     task = (f"Investigate alert {alert_id}: {alert['metric']} at store {alert['store_id']} ({alert['store_name']}, "
             f"{alert['zone']}) rose from {alert['before']} to {alert['after']} at {alert['ts']}. The alert attributes "
-            f"it to SKU {alert['sku_id']} ({alert['sku_name']}, category {alert['sku_category']}). The alert itself "
-            f"is Finding {ctx.shared['alert_finding']}. Cite Findings by these short refs.")
+            f"it to SKU {alert['sku_id']} ({alert['sku_name']}, category {alert['sku_category']}).\n"
+            f"Evidence is cited by Finding refs (F1, F2, ...); the alert's own Finding is {ctx.shared['alert_finding']}. "
+            f"Finding refs are only for citing in submit_answer. Every other tool takes node ids such as {alert_id}, "
+            f"{alert['store_id']} or {alert['sku_id']}.")
     try:
         run_agent(ctx, ORCHESTRATOR, task)
     except Exception as e:  # model or API failure: record it, mark the investigation failed, write no memory

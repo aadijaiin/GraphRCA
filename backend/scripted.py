@@ -28,13 +28,13 @@ def _report(history):
 
 def store_ops(history, ctx):
     if not history:
-        return [("trace_decision", {"alert_id": ctx.alert["alert_id"]})]
+        return [("trace_decision", {})]
     return _report(history)
 
 
 def growth(history, ctx):
     if not history:
-        return [("find_amplifiers", {"alert_id": ctx.alert["alert_id"]})]
+        return [("find_amplifiers", {})]
     return _report(history)
 
 

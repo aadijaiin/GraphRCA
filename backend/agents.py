@@ -16,6 +16,7 @@ from tools import TOOLS, run
 
 MAX_CALLS = 8    # tool calls per agent loop
 MAX_TASKS = 6    # department tasks per investigation
+ROOT_LABELS = ("Equipment", "Campaign", "Supplier", "Decision")
 MAX_PARALLEL = int(os.getenv("BRAIN_MAX_PARALLEL", "4"))  # departments running at once (API rate limits)
 REF = re.compile(r"\bF\d+\b")
 
@@ -63,9 +64,12 @@ def _emit_call(ctx, tool, args, r=None):
     return step
 
 
-def graph_tool(name, description, params, finding=True):
-    """A department tool: runs one query-backed tool, emits events, and writes a Finding from the result."""
+def graph_tool(name, description, params, finding=True, bind_alert=False):
+    """A department tool: runs one query-backed tool, emits events, and writes a Finding from the result.
+    bind_alert: the alert id comes from the investigation, not the model (models confused it with Finding refs)."""
     def handler(ctx, **args):
+        if bind_alert:
+            args = {**args, "alert_id": ctx.alert["alert_id"]}
         r = TOOLS[name](ctx.graph, **args)
         _emit_call(ctx, name, args, r)
         payload = {"result": r["result"], "error": r["error"]}
@@ -88,15 +92,16 @@ def _read_findings(ctx, agent=None):
 STR, NSTR = {"type": "string"}, {"type": ["string", "null"]}
 KIND = {"type": ["string", "null"], "enum": ["chiller", "freezer", "rack", "scanner", None]}
 
-T_ALERT = graph_tool("get_alert", "The alert's store, SKU, metric and values.", {"alert_id": STR})
+T_ALERT = graph_tool("get_alert", "This investigation's alert: its store, SKU, metric and values.", {},
+                     bind_alert=True)
 T_TRACE = graph_tool(
     "trace_decision",
     "Latest decision that moved the alert's SKU in the alert's store before the alert: who made it, what it "
-    "changed, its causes (tickets, equipment) with owner/assignee, and source messages.", {"alert_id": STR})
+    "changed, its causes (tickets, equipment) with owner/assignee, and source messages.", {}, bind_alert=True)
 T_AMPS = graph_tool(
     "find_amplifiers",
     "Active campaigns that promote the alert's SKU in the alert's store and started before the alert, with "
-    "owners and launch messages.", {"alert_id": STR})
+    "owners and launch messages.", {}, bind_alert=True)
 T_EXPERT = graph_tool("find_expert", "People ranked by work history on an entity (equipment, ticket, SKU).",
                       {"entity_id": STR})
 T_EQUIP = graph_tool(
@@ -151,6 +156,34 @@ DEPARTMENTS = {
 
 # ---- runner ----
 
+_TYPES = {"string": str, "array": list, "object": dict, "null": type(None), "integer": int, "number": (int, float),
+          "boolean": bool}
+
+
+def check_args(spec, args):
+    """Check tool arguments against the tool's schema, since self-hosted servers do not enforce it.
+    Unknown keys are dropped; missing keys, wrong types, values outside an enum, and Finding refs (F3) passed
+    where a node id belongs are errors the model can fix. Returns (clean_args, problem)."""
+    clean = {k: v for k, v in args.items() if k in spec.params}
+    for k, prop in spec.params.items():
+        if k not in clean:
+            if "null" in (prop["type"] if isinstance(prop["type"], list) else [prop["type"]]):
+                clean[k] = None
+                continue
+            return clean, f"missing argument {k!r}"
+        v = clean[k]
+        types = prop["type"] if isinstance(prop["type"], list) else [prop["type"]]
+        if not any(isinstance(v, _TYPES[t]) for t in types):
+            return clean, f"{k!r} must be {' or '.join(types)}"
+        if "enum" in prop and v not in prop["enum"]:
+            return clean, f"{k!r} must be one of {[e for e in prop['enum'] if e is not None]}" + (
+                " or null" if None in prop["enum"] else "")
+        if isinstance(v, str) and REF.fullmatch(v.strip()):
+            return clean, (f"{v!r} is a Finding ref, used only to cite evidence in submit_answer; {k!r} needs a "
+                           f"node id from the Findings, such as ALT-001, EQ-SD04-CHA1 or CMP-01")
+    return clean, None
+
+
 def _tool_result_block(call_id, payload):
     return {"type": "tool_result", "tool_use_id": call_id, "content": json.dumps(payload, default=str),
             **({"is_error": True} if payload.get("error") else {})}
@@ -185,8 +218,11 @@ def run_agent(ctx, agent, task_text, max_calls=MAX_CALLS):
                 return {"error": "tool call budget exhausted; give your final report now"}
             if call.input is None:
                 return {"error": f"arguments for {call.name} were not a valid JSON object; call it again"}
+            args, problem = check_args(spec, call.input)
+            if problem:
+                return {"error": f"{call.name}: {problem}"}
             try:
-                return spec.handler(ctx, **call.input)
+                return spec.handler(ctx, **args)
             except TypeError as e:
                 return {"error": f"bad arguments: {e}"}
 
@@ -292,13 +328,32 @@ def validate_answer(ctx, raw):
             c["sources"] = list(dict.fromkeys(s for i in c["finding_ids"] for s in srcs.get(i, [])[:3]))
     cited = {n for i in used for n in findings[i]["cites"]}
 
+    structural = {n for i in used if findings[i]["tool"] != "search_artifacts" for n in findings[i]["cites"]}
+
     def entity(eid, what):
         if not eid:
+            return None
+        rows = run(ctx.graph, "node_brief", id=eid)
+        if not rows:
+            dropped.append({"kind": what, "id": eid, "reason": "no such node"})
+            return None
+        b = rows[0]
+        if what == "amplifier" and b["label"] != "Campaign":
+            dropped.append({"kind": what, "id": eid, "reason": f"an amplifier must be a Campaign, not a {b['label']}"})
+            return None
+        if what == "root_cause" and b["label"] == "Ticket":  # the ticket records the fault; the unit is the cause
+            subject = run(ctx.graph, "ticket_subject", id=eid)
+            if subject:
+                eid, b = subject[0]["equipment_id"], run(ctx.graph, "node_brief", id=subject[0]["equipment_id"])[0]
+        if what == "root_cause" and b["label"] not in ROOT_LABELS:
+            dropped.append({"kind": what, "id": eid, "reason": f"a root cause must be one of {ROOT_LABELS}"})
             return None
         if eid not in cited:
             dropped.append({"kind": what, "id": eid, "reason": "not cited by a kept finding"})
             return None
-        b = run(ctx.graph, "node_brief", id=eid)[0]
+        if eid not in structural:  # keyword hits alone cannot establish a cause (and would poison memory)
+            dropped.append({"kind": what, "id": eid, "reason": "only keyword-search findings mention it"})
+            return None
         name = f"{b['name']} at {ctx.alert['store_id']}" if b["label"] == "Equipment" else b["name"]
         return {"id": eid, "label": b["label"], "name": name,
                 "kind": b["kind"] if b["label"] == "Equipment" else b["label"].lower()}
@@ -339,7 +394,8 @@ ORCHESTRATOR = Agent(
     "to the incident.\n"
     "5. Finish with submit_answer. Every claim and action must list the Finding refs (F1, F2, ...) that support it; claims "
     "without valid Finding ids are dropped. root_cause_id and amplifier_id must be node ids that a cited "
-    "Finding mentions. The root cause is what started the problem; an amplifier made it worse. Use null when "
+    "Finding mentions. The root cause is the thing that failed (usually Equipment, otherwise a Campaign, Supplier "
+    "or Decision; a ticket only records a fault). The amplifier, if any, must be a Campaign that made it worse. Use null when "
     "there is none.\n\n"
     "Write each claim as one specific fact with names and ids: who decided what, when, and why (for example the "
     "decision id, the person, the equipment, the ticket and its status). Write each action as an instruction to a "
