@@ -19,8 +19,11 @@ export default function App() {
   const touchedEdges = useRef(new Set());
   const [, setTick] = useState(0);
   const [active, setActive] = useState(null); // {alertId, mode}
-  const [steps, setSteps] = useState([]);
+  const [steps, setSteps] = useState([]); // timeline: memory, tasks and tool calls in arrival order
   const [answer, setAnswer] = useState(null);
+  const [model, setModel] = useState(null);
+  const [findings, setFindings] = useState(0);
+  const [memories, setMemories] = useState([]);
   const [drawer, setDrawer] = useState(null);
   const [notice, setNotice] = useState(null);
 
@@ -32,7 +35,8 @@ export default function App() {
         data.links.forEach((l) => (l.key = edgeKey(l.source, l.type, l.target)));
         setGraph(data);
         setAlerts(await a.json());
-        setTimeout(() => fgRef.current?.zoomToFit(400, 40), 300); // after the canvas has its size
+        // fit once the layout has settled and the canvas has its final size
+        [300, 1200].forEach((ms) => setTimeout(() => fgRef.current?.zoomToFit(400, 40), ms));
       })
       .catch((e) => setLoadError(String(e.message || e)));
   }, []);
@@ -47,9 +51,26 @@ export default function App() {
         touchedEdges.current = new Set();
         setSteps([]);
         setAnswer(null);
+        setFindings(0);
+        setMemories([]);
+        setModel(d.model || null);
+        break;
+      case "memory_recalled":
+        setSteps((s) => [...s, { kind: "memory", key: `m${s.length}`, text: d.plan
+          ? `Memory: ${d.memories.length} similar incident(s); plan ${d.plan.departments.join(", ")}`
+          : "Memory: no similar incident yet" }]);
+        break;
+      case "task_created":
+        setSteps((s) => [...s, { kind: "task", key: d.task_id, agent: d.department, round: d.round, text: d.instruction }]);
         break;
       case "tool_call":
-        setSteps((s) => [...s, { step: d.step, tool: d.tool, args: d.args, nodes: 0, edges: 0 }]);
+        setSteps((s) => [...s, { kind: "tool", key: d.step, step: d.step, agent: d.agent, tool: d.tool, args: d.args, nodes: 0, edges: 0 }]);
+        break;
+      case "finding_written":
+        setFindings((n) => n + 1);
+        break;
+      case "memory_written":
+        setMemories((m) => [...m, d]);
         break;
       case "nodes_touched":
         d.node_ids.forEach((id) => touchedNodes.current.has(id) || touchedNodes.current.set(id, d.step));
@@ -177,6 +198,7 @@ export default function App() {
         <span className="sub">Cross-team incident investigator on FalkorDB</span>
         <span className="tenant">tenant: {TENANT}</span>
         {active && <span className={`mode ${active.mode}`}>{active.mode === "replay" ? "REPLAY" : "LIVE"}</span>}
+        {model && <span className="model" title="Which backend chose the tool calls">backend: {model}</span>}
       </header>
 
       <aside className="alerts">
@@ -231,16 +253,26 @@ export default function App() {
       </main>
 
       <section className="panel">
-        <h2>Steps</h2>
+        <h2>Investigation {findings > 0 && <span className="count">{findings} findings</span>}</h2>
         {!steps.length && <p className="muted">Click an alert to start an investigation.</p>}
         <ol className="steps">
-          {steps.map((s) => (
-            <li key={s.step}>
-              <code>{s.tool}</code>
-              <span className="args">{Object.values(s.args).join(", ")}</span>
-              <span className="size">{s.nodes} nodes · {s.edges} edges</span>
-            </li>
-          ))}
+          {steps.map((s) =>
+            s.kind === "tool" ? (
+              <li key={s.key} className="tool">
+                <span className={`agent a-${s.agent}`}>{s.agent}</span>
+                <code>{s.tool}</code>
+                <span className="args">{Object.values(s.args).filter((v) => v !== null).join(", ")}</span>
+                <span className="size">{s.nodes} nodes · {s.edges} edges</span>
+              </li>
+            ) : s.kind === "task" ? (
+              <li key={s.key} className="task">
+                <span className="round">round {s.round}</span> → <span className={`agent a-${s.agent}`}>{s.agent}</span>
+                <span className="instr">{s.text}</span>
+              </li>
+            ) : (
+              <li key={s.key} className="memory">{s.text}</li>
+            )
+          )}
         </ol>
 
         {answer && (
@@ -256,7 +288,7 @@ export default function App() {
                       {c.sources.length} source{c.sources.length > 1 ? "s" : ""}
                     </button>
                   )}
-                  <span className="steps-ref">{c.finding_ids.join(", ")}</span>
+                  <span className="steps-ref">{c.finding_ids.length} finding{c.finding_ids.length > 1 ? "s" : ""}</span>
                 </li>
               ))}
             </ul>
@@ -268,6 +300,15 @@ export default function App() {
                 </ul>
               </>
             )}
+          </>
+        )}
+
+        {memories.length > 0 && (
+          <>
+            <h3>Remembered for next time</h3>
+            <ul className="memories">
+              {memories.map((m) => <li key={m.memory_id}><span className="mkind">{m.kind}</span> {m.content}</li>)}
+            </ul>
           </>
         )}
       </section>

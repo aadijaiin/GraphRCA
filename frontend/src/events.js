@@ -1,7 +1,7 @@
 // Event sources for an investigation. Both produce the same events (docs/events.md).
 export const EVENT_TYPES = [
-  "investigation_started", "tool_call", "nodes_touched", "edges_touched",
-  "finding_written", "answer_ready", "memory_written", "node_created", "error",
+  "investigation_started", "memory_recalled", "task_created", "tool_call", "nodes_touched", "edges_touched",
+  "finding_written", "task_completed", "answer_ready", "memory_written", "node_created", "error",
 ];
 
 // Live: server-sent events from the backend. Returns a function that closes the stream.
@@ -13,7 +13,7 @@ export function streamLive(alertId, tenant, onEvent, onFail) {
       got++;
       const ev = JSON.parse(msg.data);
       onEvent(ev);
-      if (t === "answer_ready" || t === "error") es.close();
+      if (t === "error") es.close();
     });
   }
   es.onerror = () => {
