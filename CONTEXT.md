@@ -339,19 +339,19 @@ Each gate is a yes or no. Gate 3 on Saturday night is the one that fixes the tra
 ### Phase 0: tonight (Fri 2:15 to 3:15 AM)
 
 - [ ] Confirm the roster and the one-team rule; join the FalkorDB Discord; open the submit page and note its fields and limits
-- [ ] Create the empty public repository with a license, folders `seed/`, `queries/`, `backend/`, `frontend/`, `eval/`, plus `DECISIONS.md` and `AI_USE.md`
-- [ ] Run FalkorDB with Docker, connect from the backend language, create and read one test node
-- [ ] Write the three contracts into the repo: graph schema, tool result shape, event stream
+- [x] Create the empty public repository with a license, folders `seed/`, `queries/`, `backend/`, `frontend/`, `eval/`, plus `DECISIONS.md` and `AI_USE.md`
+- [x] Run FalkorDB with Docker, connect from the backend language, create and read one test node (`backend/smoke_test.py`)
+- [x] Write the three contracts into the repo: graph schema, tool result shape, event stream (`docs/`)
 
 ### Phase 1: foundations (Fri 10:00 AM to 10:00 PM)
 
-- [ ] Graph and data: generator for entities and relationships, with the Scenario A chain planted
-- [ ] Graph and data: Slack, SOP and ticket fixtures drafted, then edited by a human; distractors added
-- [ ] Graph and data: indexes and unique constraints; first version of `queries/`
-- [ ] Agent: tool functions for search, trace\_decision, find\_amplifiers and find\_expert
-- [ ] Agent: terminal script that answers Scenario A using only tool calls and prints the cited sources
-- [ ] Frontend: scaffold and graph canvas running against mocked events from the contract
-- [ ] Docs and deploy: public URL with FalkorDB and the backend running, even if it only returns the seed graph
+- [x] Graph and data: generator for entities and relationships, with the Scenario A chain planted (plus 9 templated eval incidents and Scenario C)
+- [ ] Graph and data: Slack, SOP and ticket fixtures drafted, then edited by a human; distractors added (drafted and distractors added; human edit pending)
+- [x] Graph and data: indexes and unique constraints; first version of `queries/`
+- [x] Agent: tool functions for search, trace\_decision, find\_amplifiers and find\_expert
+- [x] Agent: terminal script that answers Scenario A using only tool calls and prints the cited sources (`backend/investigate_cli.py`)
+- [x] Frontend: scaffold and graph canvas running against mocked events from the contract (runs on live SSE, with a labelled replay)
+- [ ] Docs and deploy: public URL with FalkorDB and the backend running, even if it only returns the seed graph (Docker image ready; host not chosen yet)
 
 ### Phase 2: agent, validator and memory (Sat 9:00 AM to 2:00 PM)
 
