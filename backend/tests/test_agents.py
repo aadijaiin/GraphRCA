@@ -145,3 +145,24 @@ def test_bad_procedural_memory_is_harmless(fresh_graph):
     g.query("MATCH (p:Memory:Procedural) SET p.plan = $plan", {"plan": '["growth"]'})
     answer, _ = investigate(fresh_graph, "ALT-001", ScriptedBackend(), save_run=False)
     assert answer["root_cause"]["id"] == "EQ-SD04-CHA1"
+
+
+def test_model_failure_marks_investigation_failed(graph):
+    class Broken:
+        name = "broken"
+
+        def step(self, *a):
+            raise ConnectionError("network down")
+
+    answer, inv = investigate(graph, "ALT-003", Broken(), save_run=False)
+    assert answer["root_cause"] is None and any(e["type"] == "error" for e in inv.events)
+    status = get_graph(graph).ro_query("MATCH (i:Investigation {id: $i}) RETURN i.status", {"i": inv.id}).result_set
+    assert status == [["failed"]]
+    assert not [e for e in inv.events if e["type"] == "memory_written"]
+
+
+def test_claude_backend_without_credentials_fails_fast(monkeypatch):
+    import llm
+    monkeypatch.setattr(llm, "has_credentials", lambda: False)
+    with pytest.raises(AgentError):
+        ClaudeBackend()
