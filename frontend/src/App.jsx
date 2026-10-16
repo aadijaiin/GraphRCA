@@ -7,6 +7,13 @@ const TENANT = "dashmart";
 const STEP_MS = 500; // pace of the animation, one event per tick
 const edgeKey = (from, type, to) => `${from}|${type}|${to}`;
 
+// dispatch takes a list of tasks; show the departments, not [object Object]
+const formatArgs = (args) =>
+  Object.values(args)
+    .filter((v) => v !== null)
+    .map((v) => (Array.isArray(v) ? v.map((t) => t?.department ?? JSON.stringify(t)).join(" + ") : String(v)))
+    .join(", ");
+
 export default function App() {
   const fgRef = useRef();
   const [graph, setGraph] = useState({ nodes: [], links: [] });
@@ -261,7 +268,7 @@ export default function App() {
               <li key={s.key} className="tool">
                 <span className={`agent a-${s.agent}`}>{s.agent}</span>
                 <code>{s.tool}</code>
-                <span className="args">{Object.values(s.args).filter((v) => v !== null).join(", ")}</span>
+                <span className="args">{formatArgs(s.args)}</span>
                 <span className="size">{s.nodes} nodes · {s.edges} edges</span>
               </li>
             ) : s.kind === "task" ? (
