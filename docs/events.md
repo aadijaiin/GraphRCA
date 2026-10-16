@@ -4,14 +4,17 @@
 
 | type | data |
 | --- | --- |
-| investigation_started | alert_id, tenant, graph_enabled |
-| tool_call | step, tool, args |
+| investigation_started | alert_id, tenant, graph_enabled, model (`scripted` or a Claude model id) |
+| memory_recalled | memories: [{id, kind, content}], plan (departments in order, or null) |
+| task_created | task_id, department, instruction, round |
+| tool_call | step, agent, tool, args |
 | nodes_touched | step, node_ids |
 | edges_touched | step, edges: [{type, from, to}] |
-| finding_written | finding_id, tool, summary, cites: [node ids], sources: [artifact ids] |
-| answer_ready | answer (see tool_contract.md) |
-| memory_written | memory_id, kind (episodic/semantic/procedural), investigation_id |
+| finding_written | finding_id, agent, task_id, tool, summary, cites: [node ids], sources: [artifact ids] |
+| task_completed | task_id, department, report, finding_ids |
+| answer_ready | answer (see tool_contract.md), dropped: claims the validator removed |
+| memory_written | memory_id, kind (episodic/procedural), content, investigation_id |
 | node_created | node_id, label, props (from the Ingestor / simulate-event) |
 
 Each id exists in FalkorDB. Runs are saved as JSON arrays of these events under `runs/`; replay is labeled "replay" in the UI.
-Caps: about 8 tool calls per investigation.
+Caps: 8 tool calls per agent loop, 3 orchestrator rounds per investigation.

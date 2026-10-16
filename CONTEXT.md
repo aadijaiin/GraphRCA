@@ -79,7 +79,9 @@ What separates this from RAG over Slack and Jira:
 
 &#91;embedded content: architecture · 6 layers around FalkorDB, plus the proof harness\]
 
-Data enters through the Ingestor, which validates before it writes. The Investigator reaches the graph only through the tool layer, so every step is a named query we can show and explain. The backend turns each tool result into an event, and the UI renders those events and nothing else.
+Data enters through the Ingestor, which validates before it writes. Investigations are run by an **orchestrator agent that commands department agents** (Store Ops, Facilities, Growth, Supply). Each department agent is its own LLM loop with its own prompt and only its own department's tools. Agents coordinate only through the graph: the orchestrator writes Task nodes, departments write Finding nodes to the shared Investigation subgraph and can read each other's Findings, and the orchestrator composes the answer from those Findings and writes the incident back as Memory. Every agent reaches the graph only through the tool layer, so every step is a named query we can show and explain.
+
+The shared memory lives **inside each tenant's graph**, not in a separate graph or shard: FalkorDB has no edges across graphs, and a Finding is only useful because it CITES the real Decision, Ticket or Equipment node. Tenant isolation comes from one graph per tenant. The backend turns each tool result into an event, and the UI renders those events and nothing else.
 
 How the architecture answers each requirement:
 
@@ -112,7 +114,8 @@ The model has **10 core labels and 3 agent-layer labels**, and every relationshi
 
 | Label | Purpose |
 | --- | --- |
-| Investigation | Shared state for one case; every step and finding hangs off it |
+| Investigation | Shared state for one case; every task, step and finding hangs off it |
+| Task | One instruction from the orchestrator to one department (property `department`), PART_OF the Investigation |
 | Finding | One verified fact from one tool call, with edges to what it cites |
 | Memory | Learned knowledge. Carries a second label: Episodic (what happened), Semantic (facts that hold), or Procedural (what to check first) |
 
@@ -134,7 +137,8 @@ The model has **10 core labels and 3 agent-layer labels**, and every relationshi
 | EVIDENCE\_FOR | Artifact to Decision, Ticket, Campaign or Alert | Provenance |
 | AUTHORED\_BY | Artifact to Person | Who said it |
 | AT and INVOLVES | Alert to Store, Alert to SKU | Anchoring an alert |
-| TRIGGERED\_BY and PART\_OF | Investigation to Alert, Finding to Investigation | Shared state |
+| TRIGGERED\_BY and PART\_OF | Investigation to Alert; Finding and Task to Investigation | Shared state |
+| SUPERSEDES | Memory to Memory | Newer memory replaces an older one without deleting it |
 | CITES and LEARNED\_FROM and ABOUT\_ENTITY | Finding to any node; Memory to Investigation; Memory to any node | Memory and proof |
 
 **Per-tenant graphs.** Each tenant gets its own FalkorDB graph with the same schema: `dashmart` for the main demo and `freshloop`, a tiny second company, to show that memory never crosses tenants. All queries take the graph name from the request, never from a global.
@@ -258,12 +262,15 @@ That is about 365 nodes and several hundred edges. The second tenant (`freshloop
 
 **Keeping knowledge current.** Semantic memories are never overwritten. A newer fact gets a SUPERSEDES edge to the old one, so the history stays traceable and stale facts stop being recalled. Every memory stores the Finding ids that justify it.
 
-**Two agents coordinating through the graph.** This meets the shared-state focus without a four-agent system:
+**Agents coordinating through the graph (decided Oct 16, replaces the two-agent plan):**
 
 1. **Ingestor** reads new events (the live-event button), extracts nodes against the fixed schema, validates, and MERGEs them. It can create an Alert.
-2. **Investigator** starts from an Alert, writes Findings under an Investigation, and writes memory at the end.
+2. **Orchestrator** starts from an Alert, recalls memory, creates the Investigation, and dispatches Tasks to departments. It may run a second round when one department's Finding opens work for another (Store Ops finds a broken chiller, Facilities takes it). It composes the final answer from Findings only and writes the incident back as Memory.
+3. **Department agents** (Store Ops, Facilities, Growth, Supply) each run their own loop with their own prompt and tool subset. They write Findings (one per tool call, written by code from the tool result, not by the model) and can read other departments' Findings through the graph.
 
-They share no code path except the graph, so the handoff is visible: Alert created by one, picked up by the other. If time allows after the decision gate, split the Investigator into department specialists that each write Findings to the same Investigation. Do not claim sub-agents if they are only tool groups.
+All agents run on one generic runner (`run_agent(system, tools, task)`), so a department is a prompt plus a tool list. They share no code path except the graph, so every handoff is visible as Task and Finding nodes. Do not claim sub-agents if they are only tool groups: each department must be a separate model loop.
+
+**Model.** The runner takes a model backend: Claude via the Anthropic SDK when a key is configured, or a deterministic scripted backend (same tools, same graph writes, fixed policy) for tests, offline demos and as a labelled fallback. The UI and README must say which backend produced a run.
 
 **Persistent history.** The Investigation node stores the turns of its conversation, so a follow-up question reuses earlier Findings instead of re-querying.
 
@@ -273,7 +280,7 @@ They share no code path except the graph, so the handoff is visible: Alert creat
 - **Tenant isolation:** an automated test that every query against `freshloop` returns nothing from `dashmart`.
 - **Concurrency:** a small script runs about 20 parallel investigations against one instance and records p50 and p95 latency and the count of failed writes. Report the actual numbers, with the hardware stated.
 
-**Cuts if behind:** drop the concurrency script first, then semantic memory, and keep episodic plus procedural plus the tenant test.
+**Cuts if behind:** drop the concurrency script first, then semantic memory, and keep episodic plus procedural plus the tenant test. If the department split is not stable by the Saturday gate, fall back to one agent with all tools plus memory: drop the departments, not the memory.
 
 ## 9. UI, streaming and provenance
 
@@ -355,10 +362,11 @@ Each gate is a yes or no. Gate 3 on Saturday night is the one that fixes the tra
 
 ### Phase 2: agent, validator and memory (Sat 9:00 AM to 2:00 PM)
 
-- [ ] Agent: tool-calling loop with a loop cap and low temperature; Investigation and Finding writes
-- [ ] Agent: answer validator that drops any claim without a Finding
+- [ ] Agent: generic agent runner (Claude backend plus scripted backend) with a loop cap; Investigation, Task and Finding writes
+- [ ] Agent: orchestrator plus Store Ops, Facilities, Growth and Supply department agents, dispatched in parallel, coordinating through Task and Finding nodes
+- [ ] Agent: answer validator that drops any claim without a Finding from this Investigation
 - [ ] Agent: Ingestor with schema-checked extraction and MERGE, rejecting malformed input without changing the graph
-- [ ] Agent: typed memory writes and recall (episodic and procedural first, semantic if time allows)
+- [ ] Agent: typed memory writes and recall (episodic and procedural first, semantic if time allows); recall changes the orchestrator's dispatch
 - [ ] Agent: event stream and recorded-run replay
 - [ ] Graph and data: impact\_of, connect\_path, rank\_people; tenant graphs and the isolation test
 - [ ] Agent: MCP wrapper over the same functions

@@ -20,3 +20,9 @@ Short record of what we chose, what we rejected, and why (supports rules 12 and 
 | 2026-10-16 | Phase 1 investigator is a fixed tool plan; LLM loop replaces only the planner in Phase 2 | Start with the LLM loop | Proves the graph answers every incident before any model is involved; event and answer shapes stay the same |
 | 2026-10-16 | Agent hub drawn on the canvas overlay, not added as a graph node | Virtual node in graphData | No layout jitter, and it cannot be mistaken for data |
 | 2026-10-16 | One Docker image serves API and built UI; FalkorDB separate | Separate frontend host | One deploy target; same-origin SSE |
+| 2026-10-16 | Orchestrator plus department agents (Store Ops, Facilities, Growth, Supply) coordinating through Task and Finding nodes | One investigator agent | Matches how incidents really cross teams and gives Track 02 a real coordination story; each department is a separate model loop with its own tools so it is not a renamed tool group |
+| 2026-10-16 | Shared memory in the tenant graph, not a separate graph or shard | A dedicated memory graph | FalkorDB has no cross-graph edges; Findings and Memories must CITE real entities |
+| 2026-10-16 | One generic runner, `run_agent(system, tools, task)`; agents are configs | Separate code per agent | Specialists become a prompt plus a tool list once one loop works |
+| 2026-10-16 | Findings written by code from tool results, one per tool call | Model writes findings | A Finding is a verified fact; the model can only cite them, not author them |
+| 2026-10-16 | Model backends: Claude (Anthropic SDK, claude-opus-5-5) or a deterministic scripted backend | Claude only | No API key on the dev machine; tests, offline demo and fallback need the same flow without a model. Runs are labelled with the backend |
+| 2026-10-16 | Fallback if the department split is unstable at the Saturday gate: one agent plus memory | Ship unstable multi-agent | Memory is the Track 02 proof that matters most |
