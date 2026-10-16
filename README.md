@@ -8,6 +8,8 @@ _Work in progress (Phase 1 of the plan in `CONTEXT.md`). Contracts are in `docs/
 
 ## Quick start
 
+For step-by-step setup with expected output and troubleshooting, see [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
+
 ```bash
 docker compose up -d falkordb                 # FalkorDB on :6379 (browser on :3000)
 python3 -m venv .venv && source .venv/bin/activate
