@@ -78,6 +78,12 @@ def connect_path(from_id: str, to_id: str, tenant: str = "dashmart") -> dict:
 
 
 @server.tool()
+def rank_people(investigation_id: str, tenant: str = "dashmart") -> dict:
+    """Who is most connected to the entities an investigation's Findings cite (degree, PageRank tie-break)."""
+    return _call(tenant, "rank_people", investigation_id=investigation_id)
+
+
+@server.tool()
 def search_artifacts(text: str, tenant: str = "dashmart") -> dict:
     """Full-text search over messages, SOPs, ticket text, ticket titles and SKU names."""
     return _call(tenant, "search_artifacts", text=text)

@@ -26,14 +26,13 @@ Tools by agent:
 
 | Agent | Tools |
 | --- | --- |
-| Orchestrator | recall_memory, dispatch (one Task per call; several calls in one turn run in parallel), read_findings, submit_answer |
+| Orchestrator | recall_memory, dispatch (one Task per call; several calls in one turn run in parallel), read_findings, connect_path, rank_people, submit_answer |
 | Store Ops | get_alert, trace_decision, search_artifacts, read_findings |
 | Facilities | equipment_status, find_expert, search_artifacts, read_findings |
 | Growth | get_alert, find_amplifiers, search_artifacts, read_findings |
 | Supply | impact_of, search_artifacts, read_findings |
-| Any (Track 01) | connect_path, rank_people |
 
-Every department tool call except read_findings writes one Finding node, from the tool result, by code. The model never writes a Finding's content.
+Every graph tool call (department tools, plus the orchestrator's get_alert, connect_path and rank_people) writes one Finding node, from the tool result, by code. The model never writes a Finding's content.
 
 ## Final answer object (answer validator)
 
