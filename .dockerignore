@@ -1,0 +1,7 @@
+.venv
+**/node_modules
+frontend/dist
+falkordb-data
+.git
+**/__pycache__
+.env
