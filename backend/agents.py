@@ -129,7 +129,8 @@ T_READ = ToolSpec("read_findings",
 DEPT_RULES = (
     "You work for DashMart, a fictional quick-commerce company (all data is synthetic). You investigate by calling "
     "your tools; every tool call is recorded as a Finding that other agents can read. Use only your tools, never "
-    "guess ids, and stop as soon as your task is answered. Finish with a short plain report (2 to 4 sentences) of "
+    "guess ids, and stop as soon as your task is answered: most tasks need 1 to 3 tool calls, and the main tool for "
+    "your department usually answers it in one. Finish with a short plain report (2 to 4 sentences) of "
     "what you found and the Finding ids that support it. If your tools show nothing relevant, say so.")
 
 DEPARTMENTS = {
@@ -175,7 +176,7 @@ def run_agent(ctx, agent, task_text, max_calls=MAX_CALLS):
         def execute(call, over_budget):
             spec = specs.get(call.name)
             if spec is None:
-                return {"error": f"unknown tool {call.name}"}
+                return {"error": f"unknown tool {call.name!r}; your tools are: {', '.join(specs)}"}
             if over_budget:
                 return {"error": "tool call budget exhausted; give your final report now"}
             if call.input is None:

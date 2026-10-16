@@ -74,6 +74,13 @@ class ClaudeBackend:
         return Turn(text, calls, resp.content)
 
 
+def clean_tool_name(name):
+    """gpt-oss speaks the harmony format; some servers leak its routing tokens into the function name
+    (seen on build.nvidia.com: "dispatch<|channel|>commentary") or keep the "functions." namespace."""
+    name = (name or "").split("<|", 1)[0].strip()
+    return name[len("functions."):] if name.startswith("functions.") else name
+
+
 def _openai_tool(t):
     return {"type": "function", "function": {"name": t["name"], "description": t["description"],
                                              "parameters": t["input_schema"]}}
@@ -142,8 +149,10 @@ class LocalBackend:
             except json.JSONDecodeError:
                 args = None
             call_id = tc.id or f"call_{agent}_{len(history) + i:02d}"
+            name = clean_tool_name(tc.function.name)
             raw["tool_calls"][i]["id"] = call_id
-            calls.append(ToolCall(call_id, tc.function.name, args if isinstance(args, dict) else None))
+            raw["tool_calls"][i]["function"]["name"] = name  # replay the cleaned name, keep the history consistent
+            calls.append(ToolCall(call_id, name, args if isinstance(args, dict) else None))
         return Turn(msg.content or "", calls, {"openai": raw})
 
 
