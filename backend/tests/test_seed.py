@@ -15,7 +15,8 @@ def test_deterministic():
 def test_counts_match_plan(graph):
     counts = {r["label"]: r["n"] for r in
               [dict(zip(["label", "n"], row)) for row in
-               __import__("db").get_graph(graph).query("MATCH (n) RETURN labels(n)[0], count(n)").result_set]}
+               __import__("db").get_graph(graph).query("MATCH (n) WHERE NOT (n:Investigation OR n:Task OR n:Finding OR n:Memory) "
+                                                     "RETURN labels(n)[0], count(n)").result_set]}
     assert counts == {"Person": 30, "Store": 6, "SKU": 60, "Equipment": 24, "Supplier": 8, "Campaign": 12,
                       "Ticket": 40, "Decision": 25, "Artifact": 150, "Alert": 10}
 

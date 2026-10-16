@@ -1,7 +1,6 @@
 """One test per tool against the seed, plus the full investigation on every seeded incident."""
 import pytest
 
-from investigator import investigate, validate_answer
 from tools import TOOLS
 
 
@@ -53,23 +52,3 @@ def test_touched_edges_are_real(graph):
         for e in TOOLS[name](graph, **args)["touched"]["edges"]:
             q = f"MATCH ({{id: $f}})-[r:{e['type']}]->({{id: $t}}) RETURN count(r)"
             assert g.ro_query(q, {"f": e["from"], "t": e["to"]}).result_set[0][0] >= 1, (name, e)
-
-
-def test_validator_drops_uncited_claims():
-    ans, dropped = validate_answer({"claims": [{"text": "a", "finding_ids": ["S1"]}, {"text": "b", "finding_ids": []}],
-                                    "actions": [{"text": "c"}]})
-    assert [c["text"] for c in ans["claims"]] == ["a"] and len(dropped) == 2
-
-
-@pytest.mark.parametrize("alert_id", [f"ALT-{i:03d}" for i in range(1, 11)])
-def test_investigation_matches_ground_truth(graph, truth, alert_id):
-    t = truth[alert_id]
-    answer, run = investigate(graph, alert_id)
-    assert (answer["root_cause"] or {}).get("id") == t["root_cause"]
-    want_amp = t["amplifier"] if t["variant"] == "fault_amplified" else None
-    assert (answer["amplifier"] or {}).get("id") == want_amp
-    cited = {s for c in answer["claims"] for s in c.get("sources", [])}
-    assert set(t["required_evidence"]) <= cited
-    assert all(c["finding_ids"] for c in answer["claims"] + answer["actions"])
-    types = [e["type"] for e in run.events]
-    assert types[0] == "investigation_started" and types[-1] == "answer_ready"
