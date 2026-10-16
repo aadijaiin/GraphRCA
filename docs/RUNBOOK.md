@@ -86,7 +86,14 @@ wrote eval/incidents.json (10 incidents)
 loaded graph 'dashmart': 365 nodes, 957 edges
 ```
 
-This **drops and recreates** the `dashmart` graph each time. It also rewrites `eval/incidents.json`; `git status` should show no change to it.
+This **drops and recreates** the `dashmart` graph each time, which also **wipes everything the agents have learned** (Investigation, Finding and Memory nodes). It rewrites `eval/incidents.json` too; `git status` should show no change to it.
+
+Then seed the second tenant:
+
+```bash
+python seed/generate.py --tenant freshloop
+# loaded graph 'freshloop': 25 nodes, 41 edges
+```
 
 Variants:
 
@@ -95,6 +102,7 @@ Variants:
 | `python seed/generate.py --if-missing` | Seeds only if `dashmart` does not exist | `graph 'dashmart' exists, skipping seed` |
 | `python seed/generate.py --dry-run` | Builds and validates, does not touch FalkorDB | `wrote eval/incidents.json (10 incidents)` |
 | `python seed/generate.py --graph other` | Loads into another graph | `loaded graph 'other': 365 nodes, 957 edges` |
+| `python seed/generate.py --tenant freshloop --if-missing` | Seeds the second tenant only if missing | `graph 'freshloop' exists, skipping seed` |
 
 If the generator raises `AssertionError: ALT-00x: ...`, a fixture or generator edit broke a planted chain. See Troubleshooting.
 
@@ -108,11 +116,11 @@ pytest -q tests
 Expected:
 
 ```
-.......................                                                  [100%]
-23 passed in 0.27s
+.............................................                            [100%]
+45 passed in 1.34s
 ```
 
-Tests seed their own throwaway graph `test_dashmart` and delete it afterwards; they do not touch `dashmart`.
+Tests seed their own throwaway graphs (`test_dashmart`, `test_memory`, `test_freshloop`) and delete them afterwards; they do not touch `dashmart` or `freshloop`. They use the scripted backend, so they need no API key and make no network calls.
 
 ## 7. Investigate Scenario A in the terminal
 
@@ -120,28 +128,45 @@ Tests seed their own throwaway graph `test_dashmart` and delete it afterwards; t
 python investigate_cli.py ALT-001        # still in backend/
 ```
 
-Expected (start of output):
+Without an Anthropic key this uses the scripted backend. With `ANTHROPIC_API_KEY` set it uses Claude; force either with `--backend scripted` or `--backend claude`. Expected with the scripted backend on a fresh seed (start of output):
 
 ```
-Investigation INV-ALT-001-...  (graph 'dashmart', synthetic data)
+Investigation INV-ALT-001-...  (graph 'dashmart', backend scripted, synthetic data)
 
-  S1  get_alert(alert_id='ALT-001')  ->  3 nodes, 2 edges
-  S2  search_artifacts(text='Probiotic Buttermilk 500ml SD-04')  ->  8 nodes, 0 edges
-  S3  trace_decision(alert_id='ALT-001')  ->  14 nodes, 14 edges
-  S4  find_amplifiers(alert_id='ALT-001')  ->  6 nodes, 6 edges
-  S5  find_expert(entity_id='EQ-SD04-CHA1')  ->  4 nodes, 5 edges
+    S1   orchestrator get_alert(alert_id='ALT-001')
+    S2   orchestrator recall_memory(alert_id='ALT-001')
+  memory: 0 similar incident(s), plan None
+  round 1  -> store_ops: Find any recent decision that changed how Probiotic Buttermilk 500ml is handled at SD-04, who made it and why.
+  round 1  -> growth: Check whether any active campaign is pushing Probiotic Buttermilk 500ml in SD-04 around 2026-10-16T08:30:00Z.
+    S3   store_ops    trace_decision(alert_id='ALT-001')
+    S4   growth       find_amplifiers(alert_id='ALT-001')
+  round 2  -> facilities: Store Ops traced the move at SD-04 to EQ-SD04-CHA1 (Front chiller A1). Check its tickets and who should fix it.
+    S5   facilities   equipment_status(store_id='SD-04', kind='chiller')
+    S6   facilities   find_expert(entity_id='EQ-SD04-CHA1')
+    S7   orchestrator connect_path(from_id='CMP-01', to_id='EQ-SD04-CHA1')
+    S8   orchestrator submit_answer(root_cause_id='EQ-SD04-CHA1', amplifier_id='CMP-01')
 
 Root cause: Front chiller A1 at SD-04 is down, so Probiotic Buttermilk 500ml was moved far from packing. Amplifier: Summer Coolers pushed demand for it.
 ```
 
-It then lists 4 claims, 2 recommended actions (pause Summer Coolers and tell Ananya Rao; assign FAC-882 to Rajesh Nair) and 7 sources with their full text. Any of `ALT-001` to `ALT-010` works.
+The two round 1 departments run in parallel, so their lines (S3, S4) can appear in either order. The output then lists 5 claims, 2 recommended actions (pause Summer Coolers and tell Ananya Rao; assign FAC-882 to Rajesh Nair), the sources with full text, and the two memories written. Any of `ALT-001` to `ALT-010` works.
 
-To refresh the recorded replay used by the UI:
+**See memory work:** run `python investigate_cli.py ALT-005` next. It is also a dairy alert caused by a chiller, so it recalls ALT-001 and dispatches Facilities in round 1:
+
+```
+  memory: 1 similar incident(s), plan ['store_ops', 'growth', 'facilities']
+  round 1  -> ...store_ops / growth / facilities...
+  round 1  -> facilities: Memory: a similar past incident was caused by a chiller. Check chiller units at ED-06 for open unassigned tickets and who should fix them.
+```
+
+Memory persists in the graph until you reseed. To refresh the recorded replay used by the UI, reseed first so it shows a first-time run:
 
 ```bash
-python investigate_cli.py ALT-001 --events ../frontend/public/runs/ALT-001.json
-# last line: wrote 16 events to ../frontend/public/runs/ALT-001.json
+python ../seed/generate.py && python investigate_cli.py ALT-001 --backend scripted --events ../frontend/public/runs/ALT-001.json
+# last line: wrote 37 events to ../frontend/public/runs/ALT-001.json
 ```
+
+Runs are also saved under `runs/` (gitignored), one JSON event log per investigation.
 
 ## 8. Start the API
 
@@ -160,19 +185,40 @@ Check it from a second terminal:
 
 ```bash
 curl -s localhost:8000/api/health
-# {"ok":true,"graphs":["dashmart"]}
+# {"ok":true,"graphs":["dashmart","freshloop"]}
 
 curl -s localhost:8000/api/alerts | head -c 160
 # [{"id":"ALT-001","metric":"promise_time_min","before":9.5,"after":16.0,"ts":"2026-10-16T08:30:00Z","store_id":"SD-04",...
 
 curl -s -N localhost:8000/api/investigate/ALT-001 | head -4
 # event: investigation_started
-# data: {"type": "investigation_started", ..., "data": {"alert_id": "ALT-001", "tenant": "dashmart", "graph_enabled": true}}
+# data: {"type": "investigation_started", ..., "data": {"alert_id": "ALT-001", "tenant": "dashmart", "graph_enabled": true, "model": "scripted"}}
 #
 # event: tool_call
 ```
 
 An unknown tenant returns 404: `curl -s -o /dev/null -w '%{http_code}' 'localhost:8000/api/graph?tenant=nope'` prints `404`.
+
+Ingest a live event (the Ingestor):
+
+```bash
+curl -s -X POST localhost:8000/api/events -H 'content-type: application/json' \
+  -d '{"text":"Picking up FAC-882 after lunch.","author_id":"PER-003"}' | head -c 120
+# {"ok":true,"artifact_id":"ART-L26521EEE","alert_id":null,"created":[...
+
+curl -s -X POST localhost:8000/api/events -H 'content-type: application/json' \
+  -d '{"text":"FAC-999 is down","author_id":"PER-003"}'
+# {"detail":{"errors":["FAC-999 does not exist"]}}        (HTTP 422, graph unchanged)
+```
+
+A message shaped like `ALERT SD-02: promise time up from 9.1 to 15.4 min. Pick time on Probiotic Buttermilk 500ml ...` creates an Alert (`alert_id` in the response) that then appears in the alert list and can be investigated.
+
+Asking for Claude without credentials fails fast:
+
+```bash
+curl -s 'localhost:8000/api/investigate/ALT-001?backend=claude'
+# {"detail":"backend unavailable: no Anthropic credentials: set ANTHROPIC_API_KEY or run `ant auth login`"}   (HTTP 400)
+```
 
 ## 9. Start the UI (dev mode)
 
@@ -196,7 +242,7 @@ What you should see:
 
 1. Ten alerts on the left, newest first (ALT-001 at SD-04 on top).
 2. The full graph on the canvas, coloured by label.
-3. Click the ALT-001 alert. The header shows **LIVE**, five steps appear one by one, the touched path lights up with dashed lines to the AGENT hub, and the answer appears on the right.
+3. Click the ALT-001 alert. The header shows **LIVE** and `backend: scripted` (or the Claude model). The timeline shows the memory check, each round's department tasks, and each tool call tagged with the agent that made it. The touched path lights up with dashed lines to the AGENT hub, the answer appears, and "Remembered for next time" lists the memories written.
 4. Click **n sources** on a claim to open the source drawer with message text, author and time.
 5. Click **replay** next to ALT-001 to play the recorded run; the header shows **REPLAY**.
 
@@ -208,25 +254,47 @@ Stop anything on port 8000 first (step 8's uvicorn).
 
 ```bash
 docker compose --profile app up -d --build
-docker compose logs app | tail -3
+docker compose logs app | tail -6
 ```
 
 Expected:
 
 ```
 app-1  | graph 'dashmart' exists, skipping seed      # or the seed output, on a fresh volume
+app-1  | graph 'freshloop' exists, skipping seed
 app-1  | INFO:     Application startup complete.
 app-1  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 ```
 
-Open http://localhost:8000; the API serves the built UI. Stop with `docker compose --profile app stop app`.
+Open http://localhost:8000; the API serves the built UI. The container uses the scripted backend unless you pass `ANTHROPIC_API_KEY` into it (add it under `environment:` in `docker-compose.yml`, never commit the value). Stop with `docker compose --profile app stop app`.
+
+## 11. MCP server (optional)
+
+The same graph tools are available to any MCP client over stdio:
+
+```bash
+claude mcp add dashmart-brain -- /absolute/path/to/GraphRCA/.venv/bin/python /absolute/path/to/GraphRCA/backend/mcp_server.py
+```
+
+Tools: `list_alerts`, `get_alert`, `trace_decision`, `find_amplifiers`, `equipment_status`, `find_expert`, `impact_of`, `connect_path`, `rank_people`, `search_artifacts`, `investigate`, `ingest_event`. Each takes a `tenant` (default `dashmart`). FalkorDB must be running.
+
+## 12. Using Claude as the backend
+
+```bash
+export ANTHROPIC_API_KEY=...            # or: ant auth login
+export BRAIN_MODEL=claude-opus-5-5      # default
+export BRAIN_EFFORT=medium              # low | medium | high | xhigh | max
+python investigate_cli.py ALT-001 --backend claude
+```
+
+The flow, tools, graph writes and events are the same as with the scripted backend; only the choice of tool calls and the wording of the answer come from the model. Each investigation makes several model calls (the orchestrator plus one loop per dispatched department), so expect it to take tens of seconds and to cost real API usage. Claims still have to cite Findings, so the validator may drop some; the CLI prints how many.
 
 ## Daily commands
 
 | Task | Command |
 | --- | --- |
 | Start FalkorDB | `docker compose up -d falkordb` |
-| Reseed after editing `seed/` | `python seed/generate.py` |
+| Reseed after editing `seed/` (also clears learned memory) | `python seed/generate.py && python seed/generate.py --tenant freshloop` |
 | Run tests | `cd backend && pytest -q tests` |
 | API with reload | `cd backend && uvicorn app:app --reload --port 8000` |
 | UI dev server | `cd frontend && npm run dev` |
@@ -247,5 +315,8 @@ Open http://localhost:8000; the API serves the built UI. Stop with `docker compo
 | `ModuleNotFoundError: No module named 'falkordb'` | venv not active | `source .venv/bin/activate` |
 | `ModuleNotFoundError: No module named 'db'` | CLI, tests or uvicorn run from the wrong folder | Run them from `backend/` |
 | Generator raises `AssertionError: ALT-00x: decision ...` or `amplifiers ...` | An edit to `seed/` created a second valid answer or broke a planted chain | Revert or adjust the edit; the message names the alert and what the graph now returns |
+| Investigation says `backend unavailable: no Anthropic credentials` | `--backend claude` / `?backend=claude` with no key or profile | Set `ANTHROPIC_API_KEY` (or `ant auth login`), or use the scripted backend |
+| An investigation recalls memories you did not expect | Memory persists in the graph across runs | Reseed to start clean (`python seed/generate.py`) |
+| `ModuleNotFoundError: No module named 'mcp'` or `'anthropic'` | Requirements installed before Phase 2 | `pip install -r backend/requirements.txt` |
 | `test_eval_file_matches_generator` fails | `seed/` changed but `eval/incidents.json` was not regenerated | `python seed/generate.py`, then commit the updated `eval/incidents.json` |
 | `npm run dev` fails with an engine or syntax error | Node too old for Vite 8 | Upgrade Node to 22 LTS or newer |
