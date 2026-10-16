@@ -43,6 +43,10 @@ def investigate(graph, alert_id, backend=None, emit=None, save_run=True):
     except Exception as e:  # model or API failure: record it, mark the investigation failed, write no memory
         inv.emit("error", message=f"{type(e).__name__}: {e}")
         ctx.shared["answer"] = None
+    except KeyboardInterrupt:  # Ctrl+C while waiting on a slow model: do not leave the run marked as running
+        inv.finish("failed", {"summary": "Interrupted.", "root_cause": None, "amplifier": None,
+                              "claims": [], "actions": []})
+        raise
     answer = ctx.shared["answer"] or {"summary": "No answer was submitted.", "root_cause": None, "amplifier": None,
                                       "claims": [], "actions": []}
     dropped = ctx.shared.get("dropped", [])

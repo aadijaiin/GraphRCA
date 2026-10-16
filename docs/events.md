@@ -7,6 +7,8 @@
 | investigation_started | alert_id, tenant, graph_enabled, model (`scripted` or a Claude model id) |
 | memory_recalled | memories: [{id, kind, content}], plan (departments in order, or null) |
 | task_created | task_id, department, instruction, round |
+| model_started | agent, backend (a model call is in flight) |
+| model_turn | agent, seconds, tool_calls (names) |
 | tool_call | step, agent, tool, args |
 | nodes_touched | step, node_ids |
 | edges_touched | step, edges: [{type, from, to}] |

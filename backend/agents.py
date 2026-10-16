@@ -5,6 +5,7 @@ loop and every graph-tool call it makes writes a Finding. Departments can read e
 read_findings. The orchestrator answers only by citing Finding ids, and the validator checks each one.
 """
 import json
+import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from typing import Callable
@@ -157,7 +158,11 @@ def run_agent(ctx, agent, task_text, max_calls=MAX_CALLS):
     messages = [{"role": "user", "content": task_text}]
     history, used, reminded = [], 0, False
     for _ in range(max_calls + 3):
+        ctx.inv.emit("model_started", agent=agent.name, backend=ctx.backend.name)
+        t0 = time.monotonic()
         turn = ctx.backend.step(agent.name, agent.system, schemas, messages, history, ctx)
+        ctx.inv.emit("model_turn", agent=agent.name, seconds=round(time.monotonic() - t0, 1),
+                     tool_calls=[c.name for c in turn.calls])
         messages.append({"role": "assistant", "content": turn.content})
         if not turn.calls:
             if agent.finish_with and ctx.shared.get("answer") is None and not reminded:
