@@ -105,6 +105,17 @@ T_SEARCH = graph_tool("search_artifacts",
                       {"text": STR})
 T_PATH = graph_tool("connect_path", "Shortest path between two node ids in either direction (a link, not proof).",
                     {"from_id": STR, "to_id": STR})
+def _rank_people(ctx):
+    r = TOOLS["rank_people"](ctx.graph, investigation_id=ctx.inv.id)
+    _emit_call(ctx, "rank_people", {}, r)
+    payload = {"result": r["result"], "error": r["error"]}
+    if not r["error"]:
+        payload["finding_id"], payload["summary"] = ctx.inv.finding(ctx.agent, ctx.task_id, r)
+    return payload
+
+
+T_RANK = ToolSpec("rank_people", "People most connected (OWNS, WORKED_ON) to the entities this investigation's "
+                  "Findings cite, with PageRank as tie-break: who should own the incident.", {}, _rank_people)
 T_READ = ToolSpec("read_findings",
                   "Findings every agent has written so far for this investigation (the shared state). "
                   "Pass a department name to filter, or null for all.",
@@ -261,13 +272,16 @@ ORCHESTRATOR = Agent(
     "Departments: store_ops (store decisions, placement, pick flow), facilities (equipment, faults, tickets, who "
     "fixes them), growth (campaigns and demand), supply (suppliers and inbound stock).\n\n"
     "How to work:\n"
-    "1. Call recall_memory first. If it returns a plan learned from similar past incidents, dispatch those "
-    "departments together in the first round and pass the memory's hint in the instruction. A memory is a hint "
+    "1. Call recall_memory first. Always dispatch store_ops and growth in the first round. If memory returns a "
+    "plan learned from similar past incidents, add its departments to that first round and pass the memory's hint in the instruction. A memory is a hint "
     "about where to look first, not evidence: confirm it with this investigation's Findings.\n"
     "2. Dispatch several departments in the same turn when their work is independent; they run in parallel.\n"
     "3. When one department's Finding opens work for another (for example Store Ops finds a decision caused by "
     "broken equipment), dispatch that department next with the specific ids. At most 3 dispatch rounds.\n"
-    "4. Finish with submit_answer. Every claim and action must list the Finding ids that support it; claims "
+    "4. Use connect_path to check whether entities from different departments' Findings are actually linked "
+    "(for example a campaign and a broken unit in the same store), and rank_people to see who is most connected "
+    "to the incident.\n"
+    "5. Finish with submit_answer. Every claim and action must list the Finding ids that support it; claims "
     "without valid Finding ids are dropped. root_cause_id and amplifier_id must be node ids that a cited "
     "Finding mentions. The root cause is what started the problem; an amplifier made it worse. Use null when "
     "there is none. Recommend concrete actions with the owner to contact.",
@@ -276,7 +290,7 @@ ORCHESTRATOR = Agent(
      ToolSpec("dispatch", "Give one department a task. Returns its report and the Findings it wrote.",
               {"department": {"type": "string", "enum": list(DEPARTMENTS)}, "instruction": STR}, _dispatch,
               parallel=True),
-     T_READ,
+     T_READ, T_PATH, T_RANK,
      ToolSpec("submit_answer", "Submit the final answer. Ends the investigation.",
               {"summary": STR, "root_cause_id": NSTR, "amplifier_id": NSTR, "claims": CLAIM, "actions": CLAIM},
               _submit)])

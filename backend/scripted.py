@@ -10,6 +10,7 @@ STORE = re.compile(r"\b[A-Z]{2}-\d{2}\b")
 EQUIP = re.compile(r"\bEQ-[A-Z0-9]+-[A-Z0-9]+\b")
 KINDS = re.compile(r"\b(chiller|freezer|rack|scanner)\b")
 SUPPLIER = re.compile(r"\bSUP-\d+\b")
+DEFAULT_ROUND_1 = ["store_ops", "growth"]
 
 
 def _instruction(ctx):
@@ -91,7 +92,8 @@ def orchestrator(history, ctx):
     if not dispatches:
         mem = history[0]["output"].get("result") or {}
         plan = mem.get("plan")
-        depts = plan["departments"] if plan else ["store_ops", "growth"]
+        # Memory can add departments to round 1, never remove the defaults.
+        depts = list(dict.fromkeys(DEFAULT_ROUND_1 + (plan["departments"] if plan else [])))
         return [("dispatch", {"department": d, "instruction": _instruction_for(d, a, plan)}) for d in depts]
     done = {d["input"]["department"] for d in dispatches}
     if "facilities" not in done:
@@ -100,12 +102,15 @@ def orchestrator(history, ctx):
             return [("dispatch", {"department": "facilities", "instruction":
                      f"Store Ops traced the move at {a['store_id']} to {eq['id']} ({eq['name']}). Check its tickets "
                      f"and who should fix it."})]
+    draft = compose(ctx, dispatches)
+    if draft["root_cause_id"] and draft["amplifier_id"] and not _calls(history, "connect_path"):
+        return [("connect_path", {"from_id": draft["amplifier_id"], "to_id": draft["root_cause_id"]})]
     if not _calls(history, "submit_answer"):
-        return [("submit_answer", compose(ctx, dispatches))]
+        return [("submit_answer", compose(ctx, dispatches, _calls(history, "connect_path")))]
     return "Answer submitted."
 
 
-def compose(ctx, dispatches):
+def compose(ctx, dispatches, paths=()):
     """Build submit_answer arguments from department Findings only."""
     a = ctx.alert
     by_tool = {}
@@ -137,6 +142,12 @@ def compose(ctx, dispatches):
         claims.append({"text": f"Campaign {cm['name']} ({cm['id']}), owned by {cm['owner']['name']}, went live "
                                f"{cm['hours_before_alert']}h before the alert and promotes {a['sku_name']} in "
                                f"{a['store_id']}.", "finding_ids": [amps["id"]]})
+    for h in paths:
+        res = h["output"].get("result") or {}
+        if res.get("linked") and h["output"].get("finding_id"):
+            hops = " -> ".join(f"{e['from']} {e['type']} {e['to']}" for e in res["edges"])
+            claims.append({"text": f"{res['path'][0]['id']} and {res['path'][-1]['id']} are linked in the graph in "
+                                   f"{res['hops']} hops: {hops}.", "finding_ids": [h["output"]["finding_id"]]})
     root = eq["id"] if eq else (campaigns[0]["id"] if campaigns else None)
     amplifier = campaigns[0]["id"] if eq and campaigns else None
     if amplifier:
