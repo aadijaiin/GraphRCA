@@ -179,3 +179,26 @@ def test_models_cite_short_refs(graph):
                                                     {"text": "b", "finding_ids": ["F99"]}], "actions": []})
     assert ans["claims"][0]["finding_ids"] == [inv.refs[trace_ref]] and ans["root_cause"]["id"] == "EQ-SD04-CHA1"
     assert [d["text"] for d in dropped] == ["b"]
+
+
+def test_search_hits_are_not_sources_when_structure_backs_claim(graph):
+    _, inv = investigate(graph, "ALT-001", ScriptedBackend(), save_run=False)
+    ctx = Ctx(graph, inv, ScriptedBackend(), {"store_id": "SD-04"},
+              agent="store_ops", shared={"instructions": {}, "answer": None, "order": []})
+    from agents import T_SEARCH
+    search_ref = T_SEARCH.handler(ctx, text="chiller buttermilk")["finding"]
+    trace_ref = next(r for r, fid in inv.refs.items() if inv.findings()[fid]["tool"] == "trace_decision")
+    ans, _ = validate_answer(ctx, {"summary": "", "root_cause_id": None, "amplifier_id": None, "actions": [],
+                                   "claims": [{"text": "both", "finding_ids": [trace_ref, search_ref]},
+                                              {"text": "search only", "finding_ids": [search_ref]}]})
+    both, only = ans["claims"]
+    assert not {"ART-D01", "ART-D03"} & set(both["sources"])  # GG-03 distractors from the search are not sources
+    assert 0 < len(only["sources"]) <= 3
+
+
+def test_zero_argument_tools_ignore_stray_args(graph):
+    from agents import ORCHESTRATOR
+    _, inv = investigate(graph, "ALT-001", ScriptedBackend(), save_run=False)
+    ctx = Ctx(graph, inv, ScriptedBackend(), TOOLS["get_alert"](graph, alert_id="ALT-001")["result"])
+    recall = next(t for t in ORCHESTRATOR.tools if t.name == "recall_memory")
+    assert recall.handler(ctx, alert_id="ALT-001")["error"] is None
