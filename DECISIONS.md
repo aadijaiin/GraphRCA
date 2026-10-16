@@ -40,3 +40,4 @@ Short record of what we chose, what we rejected, and why (supports rules 12 and 
 | 2026-10-16 | Orchestrator sees Finding summaries, not raw tool JSON | Full data in dispatch results | Keeps a 16k context within budget by round 2 |
 | 2026-10-16 | Cap of 6 department tasks instead of 3 dispatch rounds | Round cap | Models that make one tool call per turn would hit a round cap after three departments |
 | 2026-10-16 | Invalid JSON tool arguments returned to the model as an error; one reminder to call submit_answer | Crash or accept prose | Local servers do not enforce strict schemas; small models sometimes stop in prose |
+| 2026-10-16 | Clean tool names in LocalBackend (strip `<|...`, `functions.`) | Fail on unknown names | First gpt-oss-20b run on build.nvidia.com returned `dispatch<|channel|>commentary` for 9 of 11 orchestrator calls (harmony token leaking from the server) and never submitted an answer |
