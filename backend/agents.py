@@ -34,6 +34,7 @@ class Agent:
     name: str
     system: str
     tools: list
+    finish_with: str = None  # a tool the agent must call to finish; it is reminded once if it stops without it
 
 
 @dataclass
@@ -154,11 +155,16 @@ def run_agent(ctx, agent, task_text, max_calls=MAX_CALLS):
     specs = {t.name: t for t in agent.tools}
     schemas = [t.schema() for t in agent.tools]
     messages = [{"role": "user", "content": task_text}]
-    history, used = [], 0
-    for _ in range(max_calls + 2):
+    history, used, reminded = [], 0, False
+    for _ in range(max_calls + 3):
         turn = ctx.backend.step(agent.name, agent.system, schemas, messages, history, ctx)
         messages.append({"role": "assistant", "content": turn.content})
         if not turn.calls:
+            if agent.finish_with and ctx.shared.get("answer") is None and not reminded:
+                reminded = True  # smaller models sometimes answer in prose; ask once for the required call
+                messages.append({"role": "user", "content": f"Call {agent.finish_with} now to finish. Plain text "
+                                                            f"is not recorded as an answer."})
+                continue
             return turn.text.strip()
 
         def execute(call, over_budget):
@@ -167,6 +173,8 @@ def run_agent(ctx, agent, task_text, max_calls=MAX_CALLS):
                 return {"error": f"unknown tool {call.name}"}
             if over_budget:
                 return {"error": "tool call budget exhausted; give your final report now"}
+            if call.input is None:
+                return {"error": f"arguments for {call.name} were not a valid JSON object; call it again"}
             try:
                 return spec.handler(ctx, **call.input)
             except TypeError as e:
@@ -294,4 +302,5 @@ ORCHESTRATOR = Agent(
      T_READ, T_PATH, T_RANK,
      ToolSpec("submit_answer", "Submit the final answer. Ends the investigation.",
               {"summary": STR, "root_cause_id": NSTR, "amplifier_id": NSTR, "claims": CLAIM, "actions": CLAIM},
-              _submit)])
+              _submit)],
+    finish_with="submit_answer")

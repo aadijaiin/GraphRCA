@@ -5,8 +5,11 @@ Turn: text plus zero or more tool calls. The runner executes the calls, so tools
 identical whichever backend made the choice.
 
 - ClaudeBackend: Claude via the Anthropic SDK (needs ANTHROPIC_API_KEY or another SDK credential).
+- LocalBackend: any OpenAI-compatible chat-completions server (Ollama, vLLM, LM Studio, llama.cpp), e.g. a
+  self-hosted gpt-oss-20b. Configured with LOCAL_MODEL_URL and LOCAL_MODEL.
 - ScriptedBackend: a fixed policy per agent (scripted.py). Used by tests, offline demos and as a labelled fallback.
 """
+import json
 import os
 from dataclasses import dataclass, field
 
@@ -71,6 +74,79 @@ class ClaudeBackend:
         return Turn(text, calls, resp.content)
 
 
+def _openai_tool(t):
+    return {"type": "function", "function": {"name": t["name"], "description": t["description"],
+                                             "parameters": t["input_schema"]}}
+
+
+def _openai_messages(system, messages):
+    """The runner keeps one history shape; translate it to chat-completions messages."""
+    out = [{"role": "system", "content": system}]
+    for m in messages:
+        c = m["content"]
+        if m["role"] == "assistant" and isinstance(c, dict) and "openai" in c:
+            out.append(c["openai"])
+        elif m["role"] == "user" and isinstance(c, list):
+            out += [{"role": "tool", "tool_call_id": b["tool_use_id"], "content": b["content"]} for b in c]
+        else:
+            out.append({"role": m["role"], "content": c if isinstance(c, str) else json.dumps(c, default=str)})
+    return out
+
+
+class LocalBackend:
+    """A self-hosted model behind an OpenAI-compatible API, e.g. gpt-oss-20b on Ollama or vLLM.
+
+    LOCAL_MODEL_URL       base URL, e.g. http://mainframe:11434/v1 (Ollama) or http://mainframe:8000/v1 (vLLM)
+    LOCAL_MODEL           model name on that server (default gpt-oss:20b)
+    LOCAL_MODEL_KEY       API key if the server wants one (default none)
+    LOCAL_REASONING_EFFORT  low | medium | high, sent as reasoning_effort (gpt-oss supports it; unset = server default)
+    LOCAL_TEMPERATURE     default 0.2;  LOCAL_MAX_TOKENS  per response, default 4096;  LOCAL_TIMEOUT  seconds, default 300
+    """
+
+    def __init__(self, base_url=None, model=None, client=None):
+        self.base_url = base_url or os.getenv("LOCAL_MODEL_URL")
+        self.model = model or os.getenv("LOCAL_MODEL", "gpt-oss:20b")
+        self.reasoning = os.getenv("LOCAL_REASONING_EFFORT") or None
+        self.temperature = float(os.getenv("LOCAL_TEMPERATURE", "0.2"))
+        self.max_tokens = int(os.getenv("LOCAL_MAX_TOKENS", "4096"))
+        if client is None:
+            if not self.base_url:
+                raise AgentError("LOCAL_MODEL_URL is not set (e.g. http://mainframe:11434/v1)")
+            from openai import OpenAI, OpenAIError
+            client = OpenAI(base_url=self.base_url, api_key=os.getenv("LOCAL_MODEL_KEY") or "not-needed",
+                            timeout=float(os.getenv("LOCAL_TIMEOUT", "300")), max_retries=1)
+            try:  # fail fast if the server is down, instead of mid-investigation
+                client.with_options(timeout=5).models.list()
+            except OpenAIError as e:
+                raise AgentError(f"local model server at {self.base_url} is not reachable: {e}") from e
+        self.client = client
+        self.name = f"local:{self.model}"
+
+    def step(self, agent, system, tools, messages, history, ctx):
+        kw = dict(model=self.model, messages=_openai_messages(system, messages),
+                  tools=[_openai_tool(t) for t in tools], tool_choice="auto",
+                  temperature=self.temperature, max_tokens=self.max_tokens)
+        if self.reasoning:
+            kw["reasoning_effort"] = self.reasoning
+        resp = self.client.chat.completions.create(**kw)
+        choice = resp.choices[0]
+        msg = choice.message
+        if choice.finish_reason == "length" and not msg.tool_calls:
+            raise AgentError(f"{agent}: response hit LOCAL_MAX_TOKENS ({self.max_tokens})")
+        raw = msg.model_dump(exclude_none=True)  # replayed unchanged on the next turn (keeps reasoning fields)
+        raw["role"] = "assistant"
+        calls = []
+        for i, tc in enumerate(msg.tool_calls or []):
+            try:
+                args = json.loads(tc.function.arguments or "{}")
+            except json.JSONDecodeError:
+                args = None
+            call_id = tc.id or f"call_{agent}_{len(history) + i:02d}"
+            raw["tool_calls"][i]["id"] = call_id
+            calls.append(ToolCall(call_id, tc.function.name, args if isinstance(args, dict) else None))
+        return Turn(msg.content or "", calls, {"openai": raw})
+
+
 class ScriptedBackend:
     name = "scripted"
 
@@ -89,7 +165,12 @@ class ScriptedBackend:
         return Turn("", calls, content)
 
 
+BACKENDS = {"claude": ClaudeBackend, "local": LocalBackend, "scripted": ScriptedBackend}
+
+
 def default_backend():
-    """Claude when a key is configured, otherwise scripted. BRAIN_BACKEND=scripted|claude overrides."""
-    choice = os.getenv("BRAIN_BACKEND") or ("claude" if has_credentials() else "scripted")
-    return ClaudeBackend() if choice == "claude" else ScriptedBackend()
+    """BRAIN_BACKEND=claude|local|scripted if set; otherwise local when LOCAL_MODEL_URL is set, Claude when
+    Anthropic credentials exist, else scripted."""
+    choice = os.getenv("BRAIN_BACKEND") or (
+        "local" if os.getenv("LOCAL_MODEL_URL") else "claude" if has_credentials() else "scripted")
+    return BACKENDS[choice]()
