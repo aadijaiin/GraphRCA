@@ -1,0 +1,37 @@
+{
+  "_note": "SYNTHETIC. Templates for the 9 templated eval incidents and background chatter. LLM-drafted, needs human edit. Placeholders use Python str.format.",
+  "incident": {
+    "fault_report": "{equipment} at {store} has a fault: {symptom}. Raised {ticket}, waiting on facilities.",
+    "ticket_text": "{ticket}: {equipment} {symptom} ({store}). Assignee: unassigned.",
+    "decision": "Decision for {store}: moving {sku} from {from_loc} to {to_loc} until {equipment} is fixed.",
+    "decision_followup": "{to_loc} is far from packing, {sku} picks will slow down if orders go up.",
+    "campaign_launch": "{campaign} is live in {stores}. Discount on {skus}, expecting a strong lift.",
+    "demand_note": "{sku} orders at {store} are way above forecast since {campaign} went live, pickers are struggling to keep up.",
+    "alert": "ALERT {store}: promise time up from {before} to {after} min. Pick time on {sku} is the main contributor."
+  },
+  "symptoms": {
+    "chiller": ["not holding temperature", "display reads 10C", "fan making grinding noise and warming up"],
+    "freezer": ["frosting over and the door will not seal", "reading -8C instead of -18C", "compressor tripping every hour"],
+    "rack": ["upper shelf bracket snapped", "rack leaning and blocked off", "shelf collapsed overnight"],
+    "scanner": ["not reading barcodes", "battery dies after an hour", "stuck on boot screen"]
+  },
+  "background": [
+    "Shift handover at {store}: all good, {sku} restocked.",
+    "Can someone check why {sku} shows low stock at {store}? Physical count looks fine.",
+    "Reminder: cycle count for {category} at {store} tonight.",
+    "{store} rider wait times normal this morning.",
+    "Price update for {sku} goes live tomorrow across all stores.",
+    "Planogram review for {category} next week, send feedback to category team.",
+    "{sku} inbound from {supplier} arrived on time at {store}.",
+    "{store} packing station 2 is back online after the printer fix.",
+    "Weekly sync notes: {category} sell-through up slightly, nothing to action.",
+    "Customer complaint about {sku} packaging at {store}, logged and closed.",
+    "Has anyone seen the new tote labels for {store}? Ours have not arrived.",
+    "Restocked {sku} at {store}, shelf face looks good now."
+  ],
+  "ticket_titles": {
+    "facilities": ["{equipment} routine service ({store})", "{equipment} light flicker ({store})", "{equipment} minor leak ({store})"],
+    "engineering": ["Stock sync delay for {category}", "Promise time widget slow on Android", "Picker app crash on batch scan", "Inventory API timeout spikes", "Rider ETA off by 2 min in {zone}"],
+    "ops": ["Packing station layout change ({store})", "Tote shortage ({store})", "Shift roster gap ({store})"]
+  }
+}

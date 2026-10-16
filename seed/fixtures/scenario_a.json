@@ -1,0 +1,77 @@
+{
+  "_note": "SYNTHETIC. Hero scenario A: SLA drop at SD-04. LLM-drafted, needs human edit before submission. Ids referenced here are created by generate.py.",
+  "artifacts": [
+    {
+      "id": "ART-A01",
+      "kind": "slack",
+      "source_ref": "#sdel-store-ops/1760598000.001",
+      "ts": "2026-10-16T03:00:00Z",
+      "author": "PER-001",
+      "evidence_for": ["FAC-882"],
+      "text": "Front chiller A1 at SD-04 is reading 11C since opening, way above the 4C limit. Raised FAC-882 with facilities. Nobody has picked it up yet."
+    },
+    {
+      "id": "ART-A02",
+      "kind": "slack",
+      "source_ref": "#sdel-store-ops/1760598900.002",
+      "ts": "2026-10-16T03:15:00Z",
+      "author": "PER-001",
+      "evidence_for": ["DEC-209"],
+      "text": "Decision for SD-04: moving all Probiotic Buttermilk 500ml from front chiller A1 to back freezer B2 until A1 is repaired. Can't risk spoilage on our top seller."
+    },
+    {
+      "id": "ART-A03",
+      "kind": "slack",
+      "source_ref": "#sdel-store-ops/1760599200.003",
+      "ts": "2026-10-16T03:20:00Z",
+      "author": "PER-005",
+      "evidence_for": ["DEC-209"],
+      "text": "Heads up, B2 is at the far end of the floor, about 14 steps from packing. Buttermilk picks are going to be slow if volume goes up."
+    },
+    {
+      "id": "ART-A04",
+      "kind": "ticket_text",
+      "source_ref": "jira/FAC-882",
+      "ts": "2026-10-16T03:00:00Z",
+      "author": "PER-001",
+      "evidence_for": ["FAC-882"],
+      "text": "FAC-882: Front chiller A1 not cooling (SD-04). Display reads 11C, compressor running but no cold air. Hero dairy SKUs at risk. Assignee: unassigned. Priority: high."
+    },
+    {
+      "id": "ART-A05",
+      "kind": "slack",
+      "source_ref": "#growth-launches/1760607000.010",
+      "ts": "2026-10-16T05:30:00Z",
+      "author": "PER-002",
+      "evidence_for": ["CMP-01"],
+      "text": "Summer Coolers is live in South Delhi (SD-02, SD-04). 25% off Probiotic Buttermilk, Mango Lassi and Tender Coconut Water, plus home-screen banner. Expecting 3x on buttermilk."
+    },
+    {
+      "id": "ART-A06",
+      "kind": "slack",
+      "source_ref": "#ops-alerts/1760603400.020",
+      "ts": "2026-10-16T08:30:00Z",
+      "author": "PER-015",
+      "evidence_for": ["ALT-001"],
+      "text": "ALERT SD-04: promise time up from 9.5 to 16 min over the last two hours. Pick time is the main contributor, concentrated on Probiotic Buttermilk 500ml."
+    },
+    {
+      "id": "ART-A07",
+      "kind": "slack",
+      "source_ref": "#sdel-store-ops/1760601600.004",
+      "ts": "2026-10-16T07:40:00Z",
+      "author": "PER-005",
+      "evidence_for": ["DEC-209"],
+      "text": "Buttermilk orders have tripled since late morning, pickers are walking to B2 for almost every basket. Queue at packing is building."
+    },
+    {
+      "id": "ART-A08",
+      "kind": "sop",
+      "source_ref": "sop/cold-chain-v3#4.2",
+      "ts": "2026-08-01T00:00:00Z",
+      "author": "PER-003",
+      "evidence_for": ["DEC-209"],
+      "text": "Cold chain SOP 4.2: if a chiller holds above 6C for more than 30 minutes, move dairy to the nearest working cold unit and raise a facilities ticket. Facilities must assign within 2 hours."
+    }
+  ]
+}

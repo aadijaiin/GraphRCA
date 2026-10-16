@@ -1,0 +1,86 @@
+{
+  "_note": "SYNTHETIC. Negative controls: right words, wrong incident. LLM-drafted, needs human edit. Without these any query looks smart.",
+  "artifacts": [
+    {
+      "id": "ART-D01",
+      "kind": "slack",
+      "source_ref": "#gurugram-store-ops/1759990000.001",
+      "ts": "2026-10-09T04:00:00Z",
+      "author": "PER-006",
+      "evidence_for": ["FAC-870"],
+      "text": "Front chiller A1 at GG-03 stopped cooling overnight, buttermilk and curd moved to B2 for now. Raised FAC-870."
+    },
+    {
+      "id": "ART-D02",
+      "kind": "slack",
+      "source_ref": "#gurugram-store-ops/1760020000.002",
+      "ts": "2026-10-09T12:30:00Z",
+      "author": "PER-016",
+      "evidence_for": ["FAC-870"],
+      "text": "FAC-870 done. Replaced the thermostat on GG-03 chiller A1, holding 3C. You can move the buttermilk back."
+    },
+    {
+      "id": "ART-D03",
+      "kind": "slack",
+      "source_ref": "#gurugram-store-ops/1760021000.003",
+      "ts": "2026-10-09T13:00:00Z",
+      "author": "PER-006",
+      "evidence_for": ["DEC-215"],
+      "text": "Probiotic Buttermilk is back in front chiller A1 at GG-03, plus an end-cap display for the Gurugram Cool Down promo."
+    },
+    {
+      "id": "ART-D04",
+      "kind": "slack",
+      "source_ref": "#north-store-ops/1760100000.001",
+      "ts": "2026-10-10T08:00:00Z",
+      "author": "PER-007",
+      "evidence_for": ["DEC-201"],
+      "text": "Moved all chips to rack 3 at ND-01 to free aisle space. Picks look unaffected, rack 3 is right next to packing."
+    },
+    {
+      "id": "ART-D05",
+      "kind": "slack",
+      "source_ref": "#sdel-store-ops/1760500000.009",
+      "ts": "2026-10-15T00:30:00Z",
+      "author": "PER-008",
+      "evidence_for": [],
+      "text": "Checked the chiller temperature log at SD-02 after yesterday's power blip. All units fine, buttermilk stock normal."
+    },
+    {
+      "id": "ART-D06",
+      "kind": "slack",
+      "source_ref": "#growth-launches/1759000000.004",
+      "ts": "2026-09-20T05:00:00Z",
+      "author": "PER-002",
+      "evidence_for": ["CMP-03"],
+      "text": "Monsoon Dairy Days wraps up tonight in South Delhi. Buttermilk did 2x baseline, no ops issues reported."
+    },
+    {
+      "id": "ART-D07",
+      "kind": "slack",
+      "source_ref": "#growth-launches/1760590000.005",
+      "ts": "2026-10-16T01:00:00Z",
+      "author": "PER-011",
+      "evidence_for": ["CMP-02"],
+      "text": "Snack Attack is running in SD-04 and ND-01 today: buy two chips, get a dip free. Ops, expect a small bump on the snack aisle."
+    },
+    {
+      "id": "ART-D08",
+      "kind": "slack",
+      "source_ref": "#facilities/1760400000.007",
+      "ts": "2026-10-13T20:00:00Z",
+      "author": "PER-004",
+      "evidence_for": ["FAC-845"],
+      "text": "Closed FAC-845, SD-04 chiller A1 compressor noise was a loose mount. Unit tested fine, should be good for a while."
+    },
+    {
+      "id": "ART-D09",
+      "kind": "slack",
+      "source_ref": "#gurugram-store-ops/1760100500.010",
+      "ts": "2026-10-10T08:10:00Z",
+      "author": "PER-016",
+      "evidence_for": [],
+      "text": "Back freezer B2 at GG-03 door seal is worn, not urgent. Will look at it next visit."
+    }
+  ]
+}
