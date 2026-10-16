@@ -9,10 +9,12 @@ import threading
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from db import get_client
+from ingestor import ingest
 from llm import ClaudeBackend, ScriptedBackend, default_backend
 from orchestrator import investigate
 from tools import get_artifacts, run
@@ -50,6 +52,22 @@ def alerts(tenant: str = "dashmart"):
 @app.get("/api/artifacts")
 def artifacts(ids: str = Query(..., description="comma-separated Artifact ids"), tenant: str = "dashmart"):
     return get_artifacts(tenant_graph(tenant), [i for i in ids.split(",") if i])
+
+
+class Event(BaseModel):
+    text: str
+    author_id: str
+    kind: str = "slack"
+    channel: str = "#live-events"
+
+
+@app.post("/api/events")
+def post_event(event: Event, tenant: str = "dashmart"):
+    """Ingestor: validate and write one event. 422 with the reasons if it is rejected (graph unchanged)."""
+    result = ingest(tenant_graph(tenant), event.text, event.author_id, event.kind, event.channel)
+    if not result["ok"]:
+        raise HTTPException(422, {"errors": result["errors"]})
+    return result
 
 
 @app.get("/api/investigate/{alert_id}")
