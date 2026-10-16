@@ -136,3 +136,12 @@ def test_memory_from_other_cause_does_not_narrow_search(fresh_graph):
     assert first["root_cause"]["id"] == "CMP-01"
     answer, inv = investigate(fresh_graph, "ALT-001", ScriptedBackend(), save_run=False)
     assert answer["root_cause"]["id"] == "EQ-SD04-CHA1" and answer["amplifier"]["id"] == "CMP-01"
+
+
+def test_bad_procedural_memory_is_harmless(fresh_graph):
+    """Even a plan that names only growth cannot stop store_ops from running and finding the chiller."""
+    g = get_graph(fresh_graph)
+    investigate(fresh_graph, "ALT-005", ScriptedBackend(), save_run=False)
+    g.query("MATCH (p:Memory:Procedural) SET p.plan = $plan", {"plan": '["growth"]'})
+    answer, _ = investigate(fresh_graph, "ALT-001", ScriptedBackend(), save_run=False)
+    assert answer["root_cause"]["id"] == "EQ-SD04-CHA1"
