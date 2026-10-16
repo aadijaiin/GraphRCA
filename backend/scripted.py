@@ -133,7 +133,7 @@ def compose(ctx, dispatches, paths=()):
         eq = next((c for c in t["causes"] if c["label"] == "Equipment"), None)
         for c in t["causes"]:
             if c["label"] == "Ticket":
-                ids = [trace["id"]] + ([status["id"]] if status and eq and _status_has(status, eq["id"], c["id"]) else [])
+                ids = [trace["id"]]
                 state = "unassigned" if c["unassigned"] else f"assigned to {c['owner']['name']}"
                 claims.append({"text": f"The move was made because of ticket {c['id']} ({c['name']}), status "
                                        f"{c['status']}, {state}.", "finding_ids": ids})
@@ -166,7 +166,9 @@ def compose(ctx, dispatches, paths=()):
                 hint = f"; {top['name']} has the most history with this unit" if top else ""
                 actions.append({"text": f"Assign {c['id']} to {eq['owner']['name']} ({eq['owner']['role']}), who "
                                         f"owns {eq['name']}{hint}.",
-                                "finding_ids": [trace["id"]] + ([expert["id"]] if expert else [])})
+                                "finding_ids": [trace["id"]]
+                                + ([status["id"]] if status and _status_has(status, eq["id"], c["id"]) else [])
+                                + ([expert["id"]] if expert else [])})
     if eq and amplifier:
         summary = (f"Root cause: {eq['name']} at {a['store_id']} is down, so {a['sku_name']} was moved far from "
                    f"packing. Amplifier: {campaigns[0]['name']} pushed demand for it.")
