@@ -1,0 +1,406 @@
+[
+ {
+  "type": "investigation_started",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "alert_id": "ALT-001",
+   "tenant": "dashmart",
+   "graph_enabled": true
+  }
+ },
+ {
+  "type": "tool_call",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "step": "S1",
+   "tool": "get_alert",
+   "args": {
+    "alert_id": "ALT-001"
+   }
+  }
+ },
+ {
+  "type": "nodes_touched",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "step": "S1",
+   "node_ids": [
+    "ALT-001",
+    "SD-04",
+    "SKU-001"
+   ]
+  }
+ },
+ {
+  "type": "edges_touched",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "step": "S1",
+   "edges": [
+    {
+     "type": "AT",
+     "from": "ALT-001",
+     "to": "SD-04"
+    },
+    {
+     "type": "INVOLVES",
+     "from": "ALT-001",
+     "to": "SKU-001"
+    }
+   ]
+  }
+ },
+ {
+  "type": "tool_call",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "step": "S2",
+   "tool": "search_artifacts",
+   "args": {
+    "text": "Probiotic Buttermilk 500ml SD-04"
+   }
+  }
+ },
+ {
+  "type": "nodes_touched",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "step": "S2",
+   "node_ids": [
+    "SKU-001",
+    "ART-A06",
+    "ART-A02",
+    "ART-D03",
+    "ART-A05",
+    "ART-A07",
+    "ART-B052",
+    "ART-B077"
+   ]
+  }
+ },
+ {
+  "type": "tool_call",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "step": "S3",
+   "tool": "trace_decision",
+   "args": {
+    "alert_id": "ALT-001"
+   }
+  }
+ },
+ {
+  "type": "nodes_touched",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "step": "S3",
+   "node_ids": [
+    "ALT-001",
+    "SKU-001",
+    "SD-04",
+    "DEC-209",
+    "PER-001",
+    "ART-A02",
+    "ART-A03",
+    "ART-A07",
+    "ART-A08",
+    "EQ-SD04-CHA1",
+    "PER-003",
+    "FAC-882",
+    "ART-A01",
+    "ART-A04"
+   ]
+  }
+ },
+ {
+  "type": "edges_touched",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "step": "S3",
+   "edges": [
+    {
+     "type": "INVOLVES",
+     "from": "ALT-001",
+     "to": "SKU-001"
+    },
+    {
+     "type": "AT",
+     "from": "ALT-001",
+     "to": "SD-04"
+    },
+    {
+     "type": "CHANGED",
+     "from": "DEC-209",
+     "to": "SKU-001"
+    },
+    {
+     "type": "AT",
+     "from": "DEC-209",
+     "to": "SD-04"
+    },
+    {
+     "type": "MADE_BY",
+     "from": "DEC-209",
+     "to": "PER-001"
+    },
+    {
+     "type": "EVIDENCE_FOR",
+     "from": "ART-A02",
+     "to": "DEC-209"
+    },
+    {
+     "type": "EVIDENCE_FOR",
+     "from": "ART-A03",
+     "to": "DEC-209"
+    },
+    {
+     "type": "EVIDENCE_FOR",
+     "from": "ART-A07",
+     "to": "DEC-209"
+    },
+    {
+     "type": "EVIDENCE_FOR",
+     "from": "ART-A08",
+     "to": "DEC-209"
+    },
+    {
+     "type": "BECAUSE_OF",
+     "from": "DEC-209",
+     "to": "EQ-SD04-CHA1"
+    },
+    {
+     "type": "OWNS",
+     "from": "PER-003",
+     "to": "EQ-SD04-CHA1"
+    },
+    {
+     "type": "BECAUSE_OF",
+     "from": "DEC-209",
+     "to": "FAC-882"
+    },
+    {
+     "type": "EVIDENCE_FOR",
+     "from": "ART-A01",
+     "to": "FAC-882"
+    },
+    {
+     "type": "EVIDENCE_FOR",
+     "from": "ART-A04",
+     "to": "FAC-882"
+    }
+   ]
+  }
+ },
+ {
+  "type": "tool_call",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "step": "S4",
+   "tool": "find_amplifiers",
+   "args": {
+    "alert_id": "ALT-001"
+   }
+  }
+ },
+ {
+  "type": "nodes_touched",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "step": "S4",
+   "node_ids": [
+    "ALT-001",
+    "SD-04",
+    "SKU-001",
+    "CMP-01",
+    "PER-002",
+    "ART-A05"
+   ]
+  }
+ },
+ {
+  "type": "edges_touched",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "step": "S4",
+   "edges": [
+    {
+     "type": "AT",
+     "from": "ALT-001",
+     "to": "SD-04"
+    },
+    {
+     "type": "INVOLVES",
+     "from": "ALT-001",
+     "to": "SKU-001"
+    },
+    {
+     "type": "PROMOTES",
+     "from": "CMP-01",
+     "to": "SKU-001"
+    },
+    {
+     "type": "TARGETS",
+     "from": "CMP-01",
+     "to": "SD-04"
+    },
+    {
+     "type": "OWNS",
+     "from": "PER-002",
+     "to": "CMP-01"
+    },
+    {
+     "type": "EVIDENCE_FOR",
+     "from": "ART-A05",
+     "to": "CMP-01"
+    }
+   ]
+  }
+ },
+ {
+  "type": "tool_call",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "step": "S5",
+   "tool": "find_expert",
+   "args": {
+    "entity_id": "EQ-SD04-CHA1"
+   }
+  }
+ },
+ {
+  "type": "nodes_touched",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "step": "S5",
+   "node_ids": [
+    "EQ-SD04-CHA1",
+    "PER-004",
+    "FAC-845",
+    "PER-003"
+   ]
+  }
+ },
+ {
+  "type": "edges_touched",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "step": "S5",
+   "edges": [
+    {
+     "type": "WORKED_ON",
+     "from": "PER-004",
+     "to": "EQ-SD04-CHA1"
+    },
+    {
+     "type": "WORKED_ON",
+     "from": "PER-004",
+     "to": "FAC-845"
+    },
+    {
+     "type": "ABOUT",
+     "from": "FAC-845",
+     "to": "EQ-SD04-CHA1"
+    },
+    {
+     "type": "WORKED_ON",
+     "from": "PER-003",
+     "to": "EQ-SD04-CHA1"
+    },
+    {
+     "type": "OWNS",
+     "from": "PER-003",
+     "to": "EQ-SD04-CHA1"
+    }
+   ]
+  }
+ },
+ {
+  "type": "answer_ready",
+  "ts": "2026-10-16T10:33:24Z",
+  "investigation_id": "INV-ALT-001-20261016103324",
+  "data": {
+   "answer": {
+    "summary": "Root cause: Front chiller A1 at SD-04 is down, so Probiotic Buttermilk 500ml was moved far from packing. Amplifier: Summer Coolers pushed demand for it.",
+    "root_cause": {
+     "id": "EQ-SD04-CHA1",
+     "name": "Front chiller A1 at SD-04"
+    },
+    "amplifier": {
+     "id": "CMP-01",
+     "name": "Summer Coolers"
+    },
+    "claims": [
+     {
+      "text": "SD-04 promise time rose from 9.5 to 16.0 min; the alert attributes it to Probiotic Buttermilk 500ml.",
+      "finding_ids": [
+       "S1"
+      ]
+     },
+     {
+      "text": "Vikram Sethi (Store Manager) moved Probiotic Buttermilk 500ml from Front chiller A1 to Back freezer B2 at 2026-10-16T03:15:00Z (DEC-209).",
+      "finding_ids": [
+       "S3"
+      ],
+      "sources": [
+       "ART-A02",
+       "ART-A03",
+       "ART-A07",
+       "ART-A08"
+      ]
+     },
+     {
+      "text": "The move was made because of ticket FAC-882 (Front chiller A1 not cooling (SD-04)), status open, unassigned.",
+      "finding_ids": [
+       "S3"
+      ],
+      "sources": [
+       "ART-A01",
+       "ART-A04"
+      ]
+     },
+     {
+      "text": "Campaign Summer Coolers (CMP-01), owned by Ananya Rao, went live 3.0h before the alert and promotes Probiotic Buttermilk 500ml in SD-04.",
+      "finding_ids": [
+       "S4"
+      ],
+      "sources": [
+       "ART-A05"
+      ]
+     }
+    ],
+    "actions": [
+     {
+      "text": "Pause Summer Coolers for SD-04; tell Ananya Rao (Growth PM).",
+      "finding_ids": [
+       "S4",
+       "S3"
+      ]
+     },
+     {
+      "text": "Assign FAC-882 to Rajesh Nair (Facilities Lead (Delhi)), who owns Front chiller A1; Suresh Pillai has the most history with this unit.",
+      "finding_ids": [
+       "S3",
+       "S5"
+      ]
+     }
+    ]
+   },
+   "dropped": []
+  }
+ }
+]
