@@ -35,3 +35,8 @@ Short record of what we chose, what we rejected, and why (supports rules 12 and 
 | 2026-10-16 | ClaudeBackend checks credentials up front | Let the first request fail | The SDK client builds without credentials and fails mid-stream, leaving a running Investigation |
 | 2026-10-16 | FreshLoop tenant is 25 nodes, not ~40 | Larger second tenant | Enough for one planted chain and the isolation tests |
 | 2026-10-16 | MCP server wraps the same tool functions (mcp 2.x `MCPServer`); agents call tools in-process | Agents call tools through MCP | The demo never depends on the MCP transport; MCP is how outside clients use the graph. Track 01 claim must say exactly this |
+| 2026-10-16 | Local backend over OpenAI-compatible chat completions (openai SDK as client) for self-hosted gpt-oss-20b | Provider-specific clients per server | One class covers Ollama, vLLM, LM Studio and llama.cpp; the team hosts the model on its own machine, so no API cost and judges can run it without a key |
+| 2026-10-16 | Models cite Findings by short refs (F1, F2); code maps them to full ids | Show full ids | Small models garble 40-character ids, and the validator would then drop correct claims |
+| 2026-10-16 | Orchestrator sees Finding summaries, not raw tool JSON | Full data in dispatch results | Keeps a 16k context within budget by round 2 |
+| 2026-10-16 | Cap of 6 department tasks instead of 3 dispatch rounds | Round cap | Models that make one tool call per turn would hit a round cap after three departments |
+| 2026-10-16 | Invalid JSON tool arguments returned to the model as an error; one reminder to call submit_answer | Crash or accept prose | Local servers do not enforce strict schemas; small models sometimes stop in prose |

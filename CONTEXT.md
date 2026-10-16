@@ -363,7 +363,7 @@ Each gate is a yes or no. Gate 3 on Saturday night is the one that fixes the tra
 ### Phase 2: agent, validator and memory (Sat 9:00 AM to 2:00 PM)
 
 - [x] Agent: generic agent runner (Claude backend plus scripted backend) with a loop cap; Investigation, Task and Finding writes
-- [x] Agent: orchestrator plus Store Ops, Facilities, Growth and Supply department agents, dispatched in parallel, coordinating through Task and Finding nodes (Claude path tested only against a fake client so far; no API key yet)
+- [x] Agent: orchestrator plus Store Ops, Facilities, Growth and Supply department agents, dispatched in parallel, coordinating through Task and Finding nodes (model backends: Claude, or self-hosted gpt-oss-20b via the local backend; neither has had a real run yet)
 - [x] Agent: answer validator that drops any claim without a Finding from this Investigation
 - [x] Agent: Ingestor with schema-checked extraction and MERGE, rejecting malformed input without changing the graph (deterministic extractor)
 - [x] Agent: typed memory writes and recall (episodic and procedural first, semantic if time allows); recall changes the orchestrator's dispatch (ALT-005: 2 rounds to 1; semantic not built)
