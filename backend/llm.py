@@ -29,9 +29,20 @@ class AgentError(RuntimeError):
     pass
 
 
+def has_credentials():
+    """True if the Anthropic SDK can find credentials: an API key, an auth token, workload identity federation,
+    or a profile saved by `ant auth login`. The client only fails at the first request, so check up front."""
+    if os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_AUTH_TOKEN") or os.getenv("ANTHROPIC_FEDERATION_RULE_ID"):
+        return True
+    profile = os.getenv("ANTHROPIC_PROFILE", "default")
+    return os.path.exists(os.path.expanduser(f"~/.config/anthropic/credentials/{profile}.json"))
+
+
 class ClaudeBackend:
     def __init__(self, model=None, effort=None, client=None):
         if client is None:
+            if not has_credentials():
+                raise AgentError("no Anthropic credentials: set ANTHROPIC_API_KEY or run `ant auth login`")
             import anthropic
             client = anthropic.Anthropic()
         self.client = client
@@ -80,5 +91,5 @@ class ScriptedBackend:
 
 def default_backend():
     """Claude when a key is configured, otherwise scripted. BRAIN_BACKEND=scripted|claude overrides."""
-    choice = os.getenv("BRAIN_BACKEND") or ("claude" if os.getenv("ANTHROPIC_API_KEY") else "scripted")
+    choice = os.getenv("BRAIN_BACKEND") or ("claude" if has_credentials() else "scripted")
     return ClaudeBackend() if choice == "claude" else ScriptedBackend()

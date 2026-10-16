@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from agents import ORCHESTRATOR, Ctx, run_agent
-from llm import AgentError, default_backend
+from llm import default_backend
 from state import Investigation
 from tools import TOOLS
 
@@ -40,8 +40,9 @@ def investigate(graph, alert_id, backend=None, emit=None, save_run=True):
             f"is Finding {ctx.shared['alert_finding']}.")
     try:
         run_agent(ctx, ORCHESTRATOR, task)
-    except AgentError as e:
-        inv.emit("error", message=str(e))
+    except Exception as e:  # model or API failure: record it, mark the investigation failed, write no memory
+        inv.emit("error", message=f"{type(e).__name__}: {e}")
+        ctx.shared["answer"] = None
     answer = ctx.shared["answer"] or {"summary": "No answer was submitted.", "root_cause": None, "amplifier": None,
                                       "claims": [], "actions": []}
     dropped = ctx.shared.get("dropped", [])
@@ -51,7 +52,8 @@ def investigate(graph, alert_id, backend=None, emit=None, save_run=True):
     # Remember every department that was dispatched (not only the ones that found something), in round order
     # and then a fixed department order, since parallel dispatches finish in any order.
     plan = list(dict.fromkeys(d for _, _, d in sorted(ctx.shared["order"])))
-    inv.remember(alert, answer, plan)
+    if ctx.shared["answer"]:
+        inv.remember(alert, answer, plan)
 
     if save_run:
         RUNS.mkdir(exist_ok=True)
