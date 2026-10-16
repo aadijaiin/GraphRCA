@@ -18,4 +18,4 @@ COPY --from=ui /ui/dist frontend/dist
 WORKDIR /app/backend
 ENV PORT=8000
 # Seed on start if the graph is empty or SEED_ON_START=1, then serve
-CMD ["sh", "-c", "python ../seed/generate.py --if-missing && uvicorn app:app --host 0.0.0.0 --port ${PORT}"]
+CMD ["sh", "-c", "python ../seed/generate.py --if-missing && python ../seed/generate.py --tenant freshloop --if-missing && uvicorn app:app --host 0.0.0.0 --port ${PORT}"]
