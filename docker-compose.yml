@@ -14,6 +14,13 @@ services:
     environment:
       FALKORDB_HOST: falkordb
       FALKORDB_PORT: 6379
+      # Model backend, passed through from your shell or .env (values are never committed)
+      BRAIN_BACKEND: ${BRAIN_BACKEND:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LOCAL_MODEL_URL: ${LOCAL_MODEL_URL:-}
+      LOCAL_MODEL: ${LOCAL_MODEL:-gpt-oss:20b}
+      LOCAL_MODEL_KEY: ${LOCAL_MODEL_KEY:-}
+      LOCAL_REASONING_EFFORT: ${LOCAL_REASONING_EFFORT:-}
     ports:
       - "8000:8000"
     depends_on:
