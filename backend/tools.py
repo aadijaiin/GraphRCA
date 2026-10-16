@@ -279,10 +279,19 @@ def recall_memory(graph, alert_id):
     memories = [{"id": r["memory_id"], "content": r["content"], "past_alert_id": r["past_alert_id"],
                  "root_cause_kind": r["root_cause_kind"], "root_cause_id": r["root_cause_id"],
                  "similarity": r["similarity"]} for r in rows]
-    plan = None
-    if rows and rows[0]["procedural_id"]:
-        r = rows[0]
-        plan = {"id": r["procedural_id"], "content": r["procedural_content"], "departments": json.loads(r["plan"]),
-                "times_confirmed": r["times_confirmed"], "root_cause_kind": r["root_cause_kind"]}
-    nodes = [m["id"] for m in memories] + ([plan["id"]] if plan else [])
+    # Merge the plans of every similar memory: one past pattern must never narrow where this investigation looks.
+    plan, seen = None, set()
+    for r in rows:
+        if not r["procedural_id"] or r["procedural_id"] in seen:
+            continue
+        seen.add(r["procedural_id"])
+        plan = plan or {"ids": [], "departments": [], "root_cause_kinds": [], "content": []}
+        plan["ids"].append(r["procedural_id"])
+        plan["departments"] += [d for d in json.loads(r["plan"]) if d not in plan["departments"]]
+        if r["root_cause_kind"] not in plan["root_cause_kinds"]:
+            plan["root_cause_kinds"].append(r["root_cause_kind"])
+        plan["content"].append(r["procedural_content"])
+    if plan:
+        plan["content"] = " ".join(plan["content"])
+    nodes = [m["id"] for m in memories] + (plan["ids"] if plan else [])
     return {"memories": memories, "plan": plan}, nodes, [], []

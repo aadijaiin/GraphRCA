@@ -48,11 +48,9 @@ def investigate(graph, alert_id, backend=None, emit=None, save_run=True):
     inv.emit("answer_ready", answer=answer, dropped=dropped)
     inv.finish("done" if ctx.shared["answer"] else "failed", answer)
 
-    # Remember: plan = departments whose Findings the answer cites.
-    cited = {i for k in ("claims", "actions") for c in answer[k] for i in c["finding_ids"]}
-    agents_cited = {f["agent"] for fid, f in inv.findings().items() if fid in cited}
-    # Parallel dispatches finish in any order, so order by round, then a fixed department order.
-    plan = list(dict.fromkeys(d for _, _, d in sorted(ctx.shared["order"]) if d in agents_cited))
+    # Remember every department that was dispatched (not only the ones that found something), in round order
+    # and then a fixed department order, since parallel dispatches finish in any order.
+    plan = list(dict.fromkeys(d for _, _, d in sorted(ctx.shared["order"])))
     inv.remember(alert, answer, plan)
 
     if save_run:

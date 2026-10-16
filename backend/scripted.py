@@ -66,10 +66,10 @@ def _instruction_for(dept, alert, plan=None):
                 f"it and why.")
     if dept == "growth":
         return f"Check whether any active campaign is pushing {a['sku_name']} in {a['store_id']} around {a['ts']}."
-    if dept == "facilities" and plan:
-        return (f"Memory: a similar past incident was caused by a {plan['root_cause_kind']}. Check "
-                f"{plan['root_cause_kind']} units at {a['store_id']} for open unassigned tickets and who should "
-                f"fix them.")
+    kinds = [k for k in (plan or {}).get("root_cause_kinds", []) if k in ("chiller", "freezer", "rack", "scanner")]
+    if dept == "facilities" and kinds:
+        return (f"Memory: a similar past incident was caused by a {kinds[0]}. Check {kinds[0]} units at "
+                f"{a['store_id']} for open unassigned tickets and who should fix them.")
     return f"Investigate alert {a['alert_id']} at {a['store_id']} for your department."
 
 
