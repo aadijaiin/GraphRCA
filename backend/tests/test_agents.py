@@ -166,3 +166,16 @@ def test_claude_backend_without_credentials_fails_fast(monkeypatch):
     monkeypatch.setattr(llm, "has_credentials", lambda: False)
     with pytest.raises(AgentError):
         ClaudeBackend()
+
+
+def test_models_cite_short_refs(graph):
+    """Models see F1, F2, ...; the validator maps refs to full Finding ids and rejects unknown refs."""
+    _, inv = investigate(graph, "ALT-001", ScriptedBackend(), save_run=False)
+    assert inv.refs and all(r.startswith("F") and inv.refs[r].startswith("FND-") for r in inv.refs)
+    ctx = Ctx(graph, inv, ScriptedBackend(), {"store_id": "SD-04"})
+    trace_ref = next(r for r, fid in inv.refs.items() if inv.findings()[fid]["tool"] == "trace_decision")
+    ans, dropped = validate_answer(ctx, {"summary": "", "root_cause_id": "EQ-SD04-CHA1", "amplifier_id": None,
+                                         "claims": [{"text": "a", "finding_ids": [trace_ref]},
+                                                    {"text": "b", "finding_ids": ["F99"]}], "actions": []})
+    assert ans["claims"][0]["finding_ids"] == [inv.refs[trace_ref]] and ans["root_cause"]["id"] == "EQ-SD04-CHA1"
+    assert [d["text"] for d in dropped] == ["b"]
