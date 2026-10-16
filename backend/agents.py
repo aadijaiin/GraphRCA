@@ -5,6 +5,8 @@ loop and every graph-tool call it makes writes a Finding. Departments can read e
 read_findings. The orchestrator answers only by citing Finding ids, and the validator checks each one.
 """
 import json
+import os
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
@@ -13,7 +15,9 @@ from typing import Callable
 from tools import TOOLS, run
 
 MAX_CALLS = 8    # tool calls per agent loop
-MAX_TASKS = 6    # department tasks per investigation (rounds are not capped: some models dispatch one per turn)
+MAX_TASKS = 6    # department tasks per investigation
+MAX_PARALLEL = int(os.getenv("BRAIN_MAX_PARALLEL", "4"))  # departments running at once (API rate limits)
+REF = re.compile(r"\bF\d+\b")
 
 
 @dataclass
@@ -22,7 +26,6 @@ class ToolSpec:
     description: str
     params: dict
     handler: Callable
-    parallel: bool = False  # several calls in one turn run concurrently
 
     def schema(self):
         return {"name": self.name, "description": self.description, "strict": True,
@@ -191,11 +194,7 @@ def run_agent(ctx, agent, task_text, max_calls=MAX_CALLS):
             ctx.shared["before_dispatch"]()
         budget = [used + i >= max_calls for i in range(len(turn.calls))]
         used += len(turn.calls)
-        if len(turn.calls) > 1 and all(specs.get(c.name) and specs[c.name].parallel for c in turn.calls):
-            with ThreadPoolExecutor(len(turn.calls)) as pool:
-                outputs = list(pool.map(execute, turn.calls, budget))
-        else:
-            outputs = [execute(c, b) for c, b in zip(turn.calls, budget)]
+        outputs = [execute(c, b) for c, b in zip(turn.calls, budget)]  # parallelism lives inside dispatch
         messages.append({"role": "user", "content": [_tool_result_block(c.id, o) for c, o in zip(turn.calls, outputs)]})
         history.extend({"name": c.name, "input": c.input, "output": o} for c, o in zip(turn.calls, outputs))
         if ctx.shared.get("answer") is not None:
@@ -213,25 +212,59 @@ def _recall(ctx, **_ignored):
     return {"result": r["result"], "error": r["error"]}
 
 
-def _dispatch(ctx, department, instruction):
-    if department not in DEPARTMENTS:
-        return {"error": f"unknown department {department}"}
-    if len(ctx.shared["order"]) >= MAX_TASKS:
-        return {"error": f"task limit ({MAX_TASKS}) reached; submit your answer"}
-    tid = ctx.inv.task(department, instruction, ctx.shared["round"])
-    ctx.shared["instructions"][tid] = instruction
-    with ctx.inv._lock:
-        ctx.shared["order"].append((ctx.shared["round"], list(DEPARTMENTS).index(department), department))
+def _run_task(ctx, tid, department, instruction):
+    """One department task, on its own thread. Never raises: a failing agent marks only its own task failed."""
     a = ctx.alert
     task = (f"Task {tid} from the orchestrator: {instruction}\n\nAlert {a['alert_id']} at store {a['store_id']}, "
             f"SKU {a['sku_id']} ({a['sku_name']}), {a['metric']} {a['before']} -> {a['after']} at {a['ts']}.")
     sub = replace(ctx, agent=department, task_id=tid)
-    report = run_agent(sub, DEPARTMENTS[department], task)
+    try:
+        report, status = run_agent(sub, DEPARTMENTS[department], task), "done"
+    except Exception as e:  # model error, refusal, timeout: the other departments carry on
+        report, status = f"failed: {type(e).__name__}: {e}", "failed"
     mine = [f for f in ctx.inv.findings().values() if f["task_id"] == tid]
-    ctx.inv.complete_task(tid, department, report, [f["finding_id"] for f in mine])
-    return {"task_id": tid, "department": department, "report": report,
-            "findings": [{"ref": ctx.inv.ref_of.get(f["finding_id"], f["finding_id"]), "tool": f["tool"],
-                          "summary": f["summary"]} for f in mine]}
+    refs = [ctx.inv.ref_of.get(f["finding_id"], f["finding_id"]) for f in mine]
+    unverified = sorted(set(REF.findall(report)) - set(refs))
+    ctx.inv.complete_task(tid, department, report, [f["finding_id"] for f in mine], status, unverified)
+    return {"task_id": tid, "department": department, "status": status, "report": report,
+            "findings": [{"ref": r, "tool": f["tool"], "summary": f["summary"]} for r, f in zip(refs, mine)],
+            # refs a report mentions that are not this task's Findings: the report is not evidence for them
+            "unverified_refs": unverified}
+
+
+def _dispatch(ctx, tasks):
+    """Run several department tasks in parallel from one call. Bad items are rejected one by one."""
+    accepted, rejected = [], []
+    rnd = ctx.shared["round"]
+    with ctx.inv._lock:
+        busy = ctx.shared["round_depts"].setdefault(rnd, set())
+        for t in tasks or []:
+            dept = (t or {}).get("department")
+            instr = ((t or {}).get("instruction") or "").strip()
+            if dept not in DEPARTMENTS:
+                rejected.append({"department": dept, "error": f"unknown department; use one of {list(DEPARTMENTS)}"})
+            elif dept in busy:
+                rejected.append({"department": dept, "error": "already dispatched this round; merge the instructions"})
+            elif not instr:
+                rejected.append({"department": dept, "error": "empty instruction"})
+            elif len(ctx.shared["order"]) + len(accepted) >= MAX_TASKS:
+                rejected.append({"department": dept, "error": f"task limit ({MAX_TASKS}) reached; submit your answer"})
+            else:
+                busy.add(dept)
+                accepted.append((dept, instr))
+        for dept, _ in accepted:
+            ctx.shared["order"].append((rnd, list(DEPARTMENTS).index(dept), dept))
+    created = []
+    for dept, instr in accepted:  # create Task nodes in a stable order before any department starts
+        tid = ctx.inv.task(dept, instr, rnd)
+        ctx.shared["instructions"][tid] = instr
+        created.append((tid, dept, instr))
+    results = []
+    if created:
+        with ThreadPoolExecutor(min(MAX_PARALLEL, len(created))) as pool:
+            results = list(pool.map(lambda c: _run_task(ctx, *c), created))
+    return {"round": rnd, "results": results + rejected,
+            "note": "Reports are each department's own words. Only Findings are evidence: cite Finding refs."}
 
 
 def validate_answer(ctx, raw):
@@ -294,10 +327,11 @@ ORCHESTRATOR = Agent(
     "Departments: store_ops (store decisions, placement, pick flow), facilities (equipment, faults, tickets, who "
     "fixes them), growth (campaigns and demand), supply (suppliers and inbound stock).\n\n"
     "How to work:\n"
-    "1. Call recall_memory first. Always dispatch store_ops and growth in the first round. If memory returns a "
-    "plan learned from similar past incidents, add its departments to that first round and pass the memory's hint in the instruction. A memory is a hint "
+    "1. Call recall_memory first. Then make ONE dispatch call for round 1 containing store_ops and growth, plus "
+    "every department in the memory plan if one is returned; they run in parallel. Add the plan's departments and pass the memory's hint in the instruction. A memory is a hint "
     "about where to look first, not evidence: confirm it with this investigation's Findings.\n"
-    "2. Dispatch several departments in the same turn when their work is independent; they run in parallel.\n"
+    "2. Put all independent tasks in a single dispatch call. A department's report is its own summary, not "
+    "evidence: rely on the Findings listed with it.\n"
     "3. When one department's Finding opens work for another (for example Store Ops finds a decision caused by "
     "broken equipment), dispatch that department next with the specific ids. At most 6 tasks in total.\n"
     "4. Use connect_path to check whether entities from different departments' Findings are actually linked "
@@ -316,9 +350,12 @@ ORCHESTRATOR = Agent(
     "Cite the Findings that name each owner.",
     [ToolSpec("recall_memory", "Past incidents similar to this alert and the plan learned for the pattern.", {},
               _recall),
-     ToolSpec("dispatch", "Give one department a task. Returns its report and the Findings it wrote.",
-              {"department": {"type": "string", "enum": list(DEPARTMENTS)}, "instruction": STR}, _dispatch,
-              parallel=True),
+     ToolSpec("dispatch", "Give tasks to one or more departments in ONE call; they run in parallel. Returns each "
+              "department's report and the Findings it wrote.",
+              {"tasks": {"type": "array", "minItems": 1, "items": {
+                  "type": "object", "additionalProperties": False, "required": ["department", "instruction"],
+                  "properties": {"department": {"type": "string", "enum": list(DEPARTMENTS)}, "instruction": STR}}}},
+              _dispatch),
      T_READ, T_PATH, T_RANK,
      ToolSpec("submit_answer", "Submit the final answer. Ends the investigation.",
               {"summary": STR, "root_cause_id": NSTR, "amplifier_id": NSTR, "claims": CLAIM, "actions": CLAIM},

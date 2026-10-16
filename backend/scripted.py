@@ -97,14 +97,14 @@ def orchestrator(history, ctx):
         plan = mem.get("plan")
         # Memory can add departments to round 1, never remove the defaults.
         depts = list(dict.fromkeys(DEFAULT_ROUND_1 + (plan["departments"] if plan else [])))
-        return [("dispatch", {"department": d, "instruction": _instruction_for(d, a, plan)}) for d in depts]
-    done = {d["input"]["department"] for d in dispatches}
+        return [("dispatch", {"tasks": [{"department": d, "instruction": _instruction_for(d, a, plan)} for d in depts]})]
+    done = {r["department"] for d in dispatches for r in d["output"].get("results", []) if not r.get("error")}
     if "facilities" not in done:
         eq = _equipment_cause(ctx)
         if eq:
-            return [("dispatch", {"department": "facilities", "instruction":
+            return [("dispatch", {"tasks": [{"department": "facilities", "instruction":
                      f"Store Ops traced the move at {a['store_id']} to {eq['id']} ({eq['name']}). Check its tickets "
-                     f"and who should fix it."})]
+                     f"and who should fix it."}]})]
     draft = compose(ctx, dispatches)
     if draft["root_cause_id"] and draft["amplifier_id"] and not _calls(history, "connect_path"):
         return [("connect_path", {"from_id": draft["amplifier_id"], "to_id": draft["root_cause_id"]})]

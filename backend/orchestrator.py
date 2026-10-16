@@ -26,7 +26,8 @@ def investigate(graph, alert_id, backend=None, emit=None, save_run=True):
         return answer, inv
     inv.open()
     alert = r["result"]
-    ctx = Ctx(graph, inv, backend, alert, shared={"round": 0, "order": [], "instructions": {}, "answer": None})
+    ctx = Ctx(graph, inv, backend, alert, shared={"round": 0, "order": [], "instructions": {}, "answer": None,
+                                                     "round_depts": {}})
     ctx.shared["before_dispatch"] = lambda: ctx.shared.__setitem__("round", ctx.shared["round"] + 1)
 
     # The alert itself is the first Finding, so the answer can cite it.

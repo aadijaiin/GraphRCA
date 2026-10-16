@@ -21,13 +21,19 @@ def show(ev, quiet=False):
     elif ev["type"] == "task_created":
         print(f"  round {d['round']}  -> {d['department']}: {d['instruction']}", flush=True)
     elif ev["type"] == "tool_call":
-        args = ", ".join(f"{k}={v!r}" for k, v in d["args"].items())
+        if d["tool"] == "dispatch":
+            args = " + ".join(t.get("department", "?") for t in d["args"].get("tasks") or [])
+        else:
+            args = ", ".join(f"{k}={v!r}" for k, v in d["args"].items())
         print(f"    {d['step']:<4} {d['agent']:<12} {d['tool']}({args})", flush=True)
     elif ev["type"] == "model_started" and not quiet:
         print(f"    ...  {d['agent']:<12} waiting for {d['backend']}", flush=True)
     elif ev["type"] == "model_turn" and not quiet:
         calls = ", ".join(d["tool_calls"]) or "no tool call"
         print(f"    ...  {d['agent']:<12} replied in {d['seconds']}s ({calls})", flush=True)
+    elif ev["type"] == "task_completed" and (d.get("status") == "failed" or d.get("unverified_refs")):
+        flag = f"FAILED: {d['report']}" if d["status"] == "failed" else f"report cites refs it did not find: {d['unverified_refs']}"
+        print(f"  ! {d['department']}: {flag}", flush=True)
     elif ev["type"] == "error":
         print(f"  ERROR {d['message']}", flush=True)
 
