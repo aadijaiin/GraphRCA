@@ -1,4 +1,4 @@
-# DashMart Brain
+# GraphRCA
 
 An agent that investigates cross-team failures at a fictional 10-minute-delivery company by running its reasoning as Cypher queries in FalkorDB. When something breaks, the cause usually spans five teams: the Brain finds the chain, names the owner, shows the evidence, and (Phase 2) remembers the fix.
 
