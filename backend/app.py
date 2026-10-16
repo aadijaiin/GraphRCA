@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 
 from db import get_client
 from ingestor import ingest
-from llm import ClaudeBackend, ScriptedBackend, default_backend
+from llm import BACKENDS, default_backend
 from orchestrator import investigate
 from tools import get_artifacts, run
 
@@ -73,11 +73,11 @@ def post_event(event: Event, tenant: str = "dashmart"):
 @app.get("/api/investigate/{alert_id}")
 async def investigate_stream(alert_id: str, tenant: str = "dashmart", backend: str | None = None):
     g = tenant_graph(tenant)
-    if backend not in (None, "claude", "scripted"):
-        raise HTTPException(400, "backend must be claude or scripted")
+    if backend not in (None, *BACKENDS):
+        raise HTTPException(400, f"backend must be one of {list(BACKENDS)}")
     try:
-        model = {"claude": ClaudeBackend, "scripted": ScriptedBackend}.get(backend, default_backend)()
-    except Exception as e:  # e.g. no Anthropic credentials configured
+        model = BACKENDS.get(backend, default_backend)()
+    except Exception as e:  # no Anthropic credentials, or the local model server is unreachable
         raise HTTPException(400, f"backend unavailable: {e}")
     loop = asyncio.get_running_loop()
     queue: asyncio.Queue = asyncio.Queue()

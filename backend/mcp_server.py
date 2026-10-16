@@ -9,7 +9,7 @@ import os
 from mcp.server.mcpserver import MCPServer
 
 from ingestor import ingest
-from llm import ScriptedBackend, default_backend
+from llm import BACKENDS, default_backend
 from orchestrator import investigate as run_investigation
 from tools import TOOLS
 
@@ -91,10 +91,10 @@ def search_artifacts(text: str, tenant: str = "dashmart") -> dict:
 
 @server.tool()
 def investigate(alert_id: str, tenant: str = "dashmart", backend: str = "default") -> dict:
-    """Run the orchestrator and department agents on an alert. backend: default, scripted or claude."""
+    """Run the orchestrator and department agents on an alert. backend: default, scripted, claude or local."""
     if tenant not in TENANTS:
         return {"error": f"unknown tenant {tenant}"}
-    model = ScriptedBackend() if backend == "scripted" else default_backend()
+    model = BACKENDS[backend]() if backend in BACKENDS else default_backend()
     answer, inv = run_investigation(tenant, alert_id, model)
     return {"investigation_id": inv.id, "backend": model.name, "answer": answer}
 

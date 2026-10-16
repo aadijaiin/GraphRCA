@@ -1,13 +1,13 @@
 """Terminal investigation: the orchestrator and department agents answer an alert through graph tools.
 
     python investigate_cli.py ALT-001                     # default backend (Claude if a key is set, else scripted)
-    python investigate_cli.py ALT-001 --backend scripted
+    python investigate_cli.py ALT-001 --backend scripted   # or claude, or local (LOCAL_MODEL_URL)
     python investigate_cli.py ALT-001 --events ../frontend/public/runs/ALT-001.json   # save the event log
 """
 import argparse
 import json
 
-from llm import ClaudeBackend, ScriptedBackend, default_backend
+from llm import BACKENDS, default_backend
 from orchestrator import investigate
 from tools import get_artifacts
 
@@ -16,10 +16,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("alert_id", nargs="?", default="ALT-001")
     ap.add_argument("--graph", default="dashmart")
-    ap.add_argument("--backend", choices=["claude", "scripted"])
+    ap.add_argument("--backend", choices=list(BACKENDS))
     ap.add_argument("--events", help="write the event log (docs/events.md) to this path")
     args = ap.parse_args()
-    backend = {"claude": ClaudeBackend, "scripted": ScriptedBackend}.get(args.backend, default_backend)()
+    backend = BACKENDS.get(args.backend, default_backend)()
 
     answer, inv = investigate(args.graph, args.alert_id, backend)
     print(f"Investigation {inv.id}  (graph '{args.graph}', backend {backend.name}, synthetic data)\n")
