@@ -3,6 +3,7 @@ in docs/tool_contract.md: {tool, args, result, touched: {nodes, edges}, sources,
 
 The agent never writes Cypher; it can only call these functions.
 """
+import json
 import re
 from datetime import datetime
 from functools import lru_cache, wraps
@@ -175,3 +176,113 @@ def find_expert(graph, entity_id):
 def get_artifacts(graph, ids):
     """Provenance lookup (not an agent tool): source text, author and time per Artifact id."""
     return run(graph, "get_artifacts", ids=list(ids)) if ids else []
+
+
+@tool
+def equipment_status(graph, store_id, kind=None):
+    """Equipment at a store (optionally one kind) with owner and tickets: is a fault known, open, assigned?"""
+    rows = run(graph, "equipment_status", store_id=store_id, kind=kind)
+    units = {}
+    for r in rows:
+        u = units.setdefault(r["equipment_id"], {
+            "id": r["equipment_id"], "name": r["equipment_name"], "kind": r["kind"], "location": r["location"],
+            "owner": {"id": r["owner_id"], "name": r["owner_name"], "role": r["owner_role"]} if r["owner_id"] else None,
+            "tickets": []})
+        if r["ticket_id"]:
+            u["tickets"].append({"id": r["ticket_id"], "title": r["ticket_title"], "status": r["ticket_status"],
+                                 "created_at": r["ticket_created_at"],
+                                 "assignee": {"id": r["assignee_id"], "name": r["assignee_name"]} if r["assignee_id"] else None,
+                                 "unassigned": r["ticket_status"] == "open" and not r["assignee_id"],
+                                 "evidence": r["evidence"]})
+    nodes, edges, sources = [store_id], [], []
+    for u in units.values():
+        u["open_unassigned"] = [t["id"] for t in u["tickets"] if t["unassigned"]]
+        nodes.append(u["id"])
+        edges.append(edge("HAS_EQUIPMENT", store_id, u["id"]))
+        if u["owner"]:
+            nodes.append(u["owner"]["id"])
+            edges.append(edge("OWNS", u["owner"]["id"], u["id"]))
+        for t in u["tickets"]:
+            nodes += [t["id"], *t["evidence"]]
+            edges += [edge("ABOUT", t["id"], u["id"]), *[edge("EVIDENCE_FOR", ev, t["id"]) for ev in t["evidence"]]]
+            sources += t["evidence"]
+            if t["assignee"]:
+                nodes.append(t["assignee"]["id"])
+                edges.append(edge("OWNS", t["assignee"]["id"], t["id"]))
+    return {"store_id": store_id, "equipment": list(units.values())}, nodes, edges, sources
+
+
+@tool
+def impact_of(graph, supplier_id):
+    """What a late supplier breaks: stores and SKUs it feeds, active campaigns on them, and who to tell."""
+    rows = run(graph, "impact_of", supplier_id=supplier_id)
+    if not rows:
+        raise LookupError(f"no supplier {supplier_id} or it supplies nothing stocked")
+    r0 = rows[0]
+    stores, campaigns = {}, {}
+    nodes, edges = [supplier_id, r0["planner_id"]], [edge("OWNS", r0["planner_id"], supplier_id)]
+    for r in rows:
+        stores.setdefault(r["store_id"], set()).add(r["sku_id"])
+        nodes += [r["store_id"], r["sku_id"]]
+        edges += [edge("SUPPLIES", supplier_id, r["sku_id"]), edge("STOCKS", r["store_id"], r["sku_id"])]
+        if r["campaign_id"]:
+            c = campaigns.setdefault(r["campaign_id"], {"id": r["campaign_id"], "name": r["campaign_name"],
+                                                        "owner": {"id": r["owner_id"], "name": r["owner_name"]},
+                                                        "pairs": []})
+            c["pairs"].append([r["store_id"], r["sku_id"]])
+            nodes += [r["campaign_id"], r["owner_id"]]
+            edges += [edge("PROMOTES", r["campaign_id"], r["sku_id"]), edge("TARGETS", r["campaign_id"], r["store_id"]),
+                      edge("OWNS", r["owner_id"], r["campaign_id"])]
+    heroes = sorted({r["sku_id"] for r in rows if r["is_hero"]})
+    result = {"supplier": {"id": supplier_id, "name": r0["supplier_name"],
+                           "planner": {"id": r0["planner_id"], "name": r0["planner_name"]}},
+              "stores": {s: sorted(v) for s, v in sorted(stores.items())}, "hero_skus": heroes,
+              "active_campaigns": list(campaigns.values())}
+    return result, nodes, edges, []
+
+
+@tool
+def connect_path(graph, from_id, to_id, max_len=6):
+    """Shortest path between two nodes in either direction: are these two things linked, and how?"""
+    rows = run(graph, "connect_path", from_id=from_id, to_id=to_id, max_len=int(max_len))
+    if not rows:
+        return {"linked": False, "from": from_id, "to": to_id}, [from_id, to_id], [], []
+    r = rows[0]
+    path = [{"id": i, "label": l} for i, l in zip(r["node_ids"], r["labels"])]
+    edges = [edge(t, s, d) for s, t, d in r["edges"]]
+    return ({"linked": True, "hops": int(r["hops"]), "path": path, "edges": edges},
+            r["node_ids"], edges, [i for i, l in zip(r["node_ids"], r["labels"]) if l == "Artifact"])
+
+
+@tool
+def rank_people(graph, investigation_id):
+    """Who should own this incident: people linked to the entities this investigation's Findings cite."""
+    rows = run(graph, "rank_people", investigation_id=investigation_id)
+    people = [{"id": r["person_id"], "name": r["name"], "role": r["role"], "links": r["links"], "via": r["via"],
+               "pagerank": round(r["pagerank"] or 0, 5)} for r in rows]
+    return {"people": people}, [p["id"] for p in people], [], []
+
+
+@tool
+def read_findings(graph, investigation_id, agent=None):
+    """Shared state: the Findings every agent has written so far for this investigation."""
+    rows = run(graph, "read_findings", investigation_id=investigation_id, agent=agent)
+    findings = [{"id": r["finding_id"], "agent": r["agent"], "tool": r["tool"], "task_id": r["task_id"],
+                 "summary": r["summary"], "data": r["data"], "cites": r["cites"]} for r in rows]
+    return {"findings": findings}, [f["id"] for f in findings], [], []
+
+
+@tool
+def recall_memory(graph, alert_id):
+    """Past incidents like this alert, and the procedural plan learned for the pattern."""
+    rows = run(graph, "recall_memory", alert_id=alert_id)
+    memories = [{"id": r["memory_id"], "content": r["content"], "past_alert_id": r["past_alert_id"],
+                 "root_cause_kind": r["root_cause_kind"], "root_cause_id": r["root_cause_id"],
+                 "similarity": r["similarity"]} for r in rows]
+    plan = None
+    if rows and rows[0]["procedural_id"]:
+        r = rows[0]
+        plan = {"id": r["procedural_id"], "content": r["procedural_content"], "departments": json.loads(r["plan"]),
+                "times_confirmed": r["times_confirmed"], "root_cause_kind": r["root_cause_kind"]}
+    nodes = [m["id"] for m in memories] + ([plan["id"]] if plan else [])
+    return {"memories": memories, "plan": plan}, nodes, [], []
