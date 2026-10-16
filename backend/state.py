@@ -83,6 +83,7 @@ class Investigation:
         self._n = {"T": 0, "F": 0, "S": 0}
         self._emit = emit
         self.events = []
+        self.refs, self.ref_of = {}, {}  # short Finding refs ("F3") shown to models <-> full Finding ids
 
     def next_id(self, kind):
         with self._lock:
@@ -111,16 +112,24 @@ class Investigation:
         write(self.graph, "w_complete_task", id=task_id, report=report)
         self.emit("task_completed", task_id=task_id, department=department, report=report, finding_ids=finding_ids)
 
+    def resolve(self, ref_or_id):
+        """Full Finding id for a short ref (or an id passed through unchanged)."""
+        return self.refs.get(ref_or_id, ref_or_id)
+
     def finding(self, agent, task_id, r):
-        """Write one Finding from one tool result; it CITES every node the tool touched."""
+        """Write one Finding from one tool result; it CITES every node the tool touched.
+        Returns the short ref models use to cite it, and its summary."""
         fid = self.next_id("F")
+        ref = f"F{int(fid.rsplit('-', 1)[1])}"
+        with self._lock:
+            self.refs[ref], self.ref_of[fid] = fid, ref
         summary = summarize(r)
         write(self.graph, "w_write_finding", id=fid, investigation_id=self.id, agent=agent, tool=r["tool"],
               task_id=task_id, summary=summary, data=json.dumps(r["result"], sort_keys=True), ts=now(),
               cites=r["touched"]["nodes"])
-        self.emit("finding_written", finding_id=fid, agent=agent, task_id=task_id, tool=r["tool"], summary=summary,
-                  cites=r["touched"]["nodes"], sources=r["sources"])
-        return fid, summary
+        self.emit("finding_written", finding_id=fid, ref=ref, agent=agent, task_id=task_id, tool=r["tool"],
+                  summary=summary, cites=r["touched"]["nodes"], sources=r["sources"])
+        return ref, summary
 
     def findings(self):
         """All Findings of this investigation, read back from the graph (never from agent memory)."""

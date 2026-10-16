@@ -22,7 +22,7 @@ def _calls(history, name):
 
 
 def _report(history):
-    lines = [f"{h['output']['summary']} ({h['output']['finding_id']})" for h in history if h["output"].get("finding_id")]
+    lines = [f"{h['output']['summary']} ({h['output']['finding']})" for h in history if h["output"].get("finding")]
     return " ".join(lines) or "Nothing relevant found."
 
 
@@ -74,14 +74,17 @@ def _instruction_for(dept, alert, plan=None):
     return f"Investigate alert {a['alert_id']} at {a['store_id']} for your department."
 
 
-def _equipment_cause(dispatches):
-    for d in dispatches:
-        for f in d["output"].get("findings", []):
-            if f["tool"] == "trace_decision" and (f["data"] or {}).get("decision"):
-                for c in f["data"]["causes"]:
-                    if c["label"] == "Equipment":
-                        return c
-    return None
+def _graph_findings(ctx):
+    """Findings of this investigation by tool, read from the graph (the shared state), with their short refs."""
+    by_tool = {}
+    for fid, f in sorted(ctx.inv.findings().items(), key=lambda kv: (kv[1]["ts"], kv[0])):
+        by_tool.setdefault(f["tool"], {**f, "id": ctx.inv.ref_of.get(fid, fid)})
+    return by_tool
+
+
+def _equipment_cause(ctx):
+    t = (_graph_findings(ctx).get("trace_decision") or {}).get("data") or {}
+    return next((c for c in t.get("causes", []) if c["label"] == "Equipment"), None) if t.get("decision") else None
 
 
 def orchestrator(history, ctx):
@@ -97,7 +100,7 @@ def orchestrator(history, ctx):
         return [("dispatch", {"department": d, "instruction": _instruction_for(d, a, plan)}) for d in depts]
     done = {d["input"]["department"] for d in dispatches}
     if "facilities" not in done:
-        eq = _equipment_cause(dispatches)
+        eq = _equipment_cause(ctx)
         if eq:
             return [("dispatch", {"department": "facilities", "instruction":
                      f"Store Ops traced the move at {a['store_id']} to {eq['id']} ({eq['name']}). Check its tickets "
@@ -113,10 +116,7 @@ def orchestrator(history, ctx):
 def compose(ctx, dispatches, paths=()):
     """Build submit_answer arguments from department Findings only."""
     a = ctx.alert
-    by_tool = {}
-    for d in dispatches:
-        for f in d["output"].get("findings", []):
-            by_tool.setdefault(f["tool"], f)
+    by_tool = _graph_findings(ctx)
     alert_f = ctx.shared.get("alert_finding")
     trace, amps = by_tool.get("trace_decision"), by_tool.get("find_amplifiers")
     status, expert = by_tool.get("equipment_status"), by_tool.get("find_expert")
@@ -144,10 +144,10 @@ def compose(ctx, dispatches, paths=()):
                                f"{a['store_id']}.", "finding_ids": [amps["id"]]})
     for h in paths:
         res = h["output"].get("result") or {}
-        if res.get("linked") and h["output"].get("finding_id"):
+        if res.get("linked") and h["output"].get("finding"):
             hops = " -> ".join(f"{e['from']} {e['type']} {e['to']}" for e in res["edges"])
             claims.append({"text": f"{res['path'][0]['id']} and {res['path'][-1]['id']} are linked in the graph in "
-                                   f"{res['hops']} hops: {hops}.", "finding_ids": [h["output"]["finding_id"]]})
+                                   f"{res['hops']} hops: {hops}.", "finding_ids": [h["output"]["finding"]]})
     root = eq["id"] if eq else (campaigns[0]["id"] if campaigns else None)
     amplifier = campaigns[0]["id"] if eq and campaigns else None
     if amplifier:

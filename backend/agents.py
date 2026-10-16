@@ -12,7 +12,7 @@ from typing import Callable
 from tools import TOOLS, run
 
 MAX_CALLS = 8    # tool calls per agent loop
-MAX_ROUNDS = 3   # orchestrator dispatch rounds per investigation
+MAX_TASKS = 6    # department tasks per investigation (rounds are not capped: some models dispatch one per turn)
 
 
 @dataclass
@@ -65,7 +65,7 @@ def graph_tool(name, description, params, finding=True):
         _emit_call(ctx, name, args, r)
         payload = {"result": r["result"], "error": r["error"]}
         if finding and not r["error"]:
-            payload["finding_id"], payload["summary"] = ctx.inv.finding(ctx.agent, ctx.task_id, r)
+            payload["finding"], payload["summary"] = ctx.inv.finding(ctx.agent, ctx.task_id, r)
         return payload
     return ToolSpec(name, description, params, handler)
 
@@ -75,8 +75,9 @@ def _read_findings(ctx, agent=None):
     _emit_call(ctx, "read_findings", {"agent": agent}, r)
     if r["error"]:
         return {"error": r["error"]}
-    return {"findings": [{k: f[k] for k in ("id", "agent", "tool", "summary", "data", "cites")}
-                         for f in r["result"]["findings"]]}
+    # Summaries and cited ids only, no raw data: keeps small-context models within budget.
+    return {"findings": [{"ref": ctx.inv.ref_of.get(f["id"], f["id"]), "agent": f["agent"], "tool": f["tool"],
+                          "summary": f["summary"], "cites": f["cites"]} for f in r["result"]["findings"]]}
 
 
 STR, NSTR = {"type": "string"}, {"type": ["string", "null"]}
@@ -110,7 +111,7 @@ def _rank_people(ctx):
     _emit_call(ctx, "rank_people", {}, r)
     payload = {"result": r["result"], "error": r["error"]}
     if not r["error"]:
-        payload["finding_id"], payload["summary"] = ctx.inv.finding(ctx.agent, ctx.task_id, r)
+        payload["finding"], payload["summary"] = ctx.inv.finding(ctx.agent, ctx.task_id, r)
     return payload
 
 
@@ -200,8 +201,8 @@ def _recall(ctx):
 def _dispatch(ctx, department, instruction):
     if department not in DEPARTMENTS:
         return {"error": f"unknown department {department}"}
-    if ctx.shared["round"] > MAX_ROUNDS:
-        return {"error": f"dispatch round limit ({MAX_ROUNDS}) reached; submit your answer"}
+    if len(ctx.shared["order"]) >= MAX_TASKS:
+        return {"error": f"task limit ({MAX_TASKS}) reached; submit your answer"}
     tid = ctx.inv.task(department, instruction, ctx.shared["round"])
     ctx.shared["instructions"][tid] = instruction
     with ctx.inv._lock:
@@ -214,8 +215,8 @@ def _dispatch(ctx, department, instruction):
     mine = [f for f in ctx.inv.findings().values() if f["task_id"] == tid]
     ctx.inv.complete_task(tid, department, report, [f["finding_id"] for f in mine])
     return {"task_id": tid, "department": department, "report": report,
-            "findings": [{"id": f["finding_id"], "tool": f["tool"], "summary": f["summary"], "data": f["data"]}
-                         for f in mine]}
+            "findings": [{"ref": ctx.inv.ref_of.get(f["finding_id"], f["finding_id"]), "tool": f["tool"],
+                          "summary": f["summary"]} for f in mine]}
 
 
 def validate_answer(ctx, raw):
@@ -225,7 +226,7 @@ def validate_answer(ctx, raw):
     kept, dropped = {"claims": [], "actions": []}, []
     for key in ("claims", "actions"):
         for c in raw.get(key) or []:
-            ids = c.get("finding_ids") or []
+            ids = [ctx.inv.resolve(i) for i in c.get("finding_ids") or []]
             if ids and all(i in findings for i in ids):
                 kept[key].append({"text": c["text"], "finding_ids": ids})
             else:
@@ -277,11 +278,11 @@ ORCHESTRATOR = Agent(
     "about where to look first, not evidence: confirm it with this investigation's Findings.\n"
     "2. Dispatch several departments in the same turn when their work is independent; they run in parallel.\n"
     "3. When one department's Finding opens work for another (for example Store Ops finds a decision caused by "
-    "broken equipment), dispatch that department next with the specific ids. At most 3 dispatch rounds.\n"
+    "broken equipment), dispatch that department next with the specific ids. At most 6 tasks in total.\n"
     "4. Use connect_path to check whether entities from different departments' Findings are actually linked "
     "(for example a campaign and a broken unit in the same store), and rank_people to see who is most connected "
     "to the incident.\n"
-    "5. Finish with submit_answer. Every claim and action must list the Finding ids that support it; claims "
+    "5. Finish with submit_answer. Every claim and action must list the Finding refs (F1, F2, ...) that support it; claims "
     "without valid Finding ids are dropped. root_cause_id and amplifier_id must be node ids that a cited "
     "Finding mentions. The root cause is what started the problem; an amplifier made it worse. Use null when "
     "there is none. Recommend concrete actions with the owner to contact.",
