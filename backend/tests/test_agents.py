@@ -74,7 +74,7 @@ def test_memory_changes_next_investigation(fresh_graph):
     assert rounds(first) == 2 and rounds(second) == 1
     plan = get_graph(fresh_graph).ro_query(
         "MATCH (p:Memory:Procedural) WHERE NOT ()-[:SUPERSEDES]->(p) RETURN p.plan, p.times_confirmed").result_set
-    assert plan == [['["store_ops", "growth", "facilities"]', 2]]  # plan kept growth although ALT-005 had no campaign
+    assert plan == [['["store_ops", "growth", "facilities"]', 2]]  # same plan confirmed; growth kept
 
 
 # ---- Claude backend: message handling, against a fake client (no network) ----
@@ -125,3 +125,14 @@ def test_claude_refusal_raises(graph):
     ctx = Ctx(graph, inv, ClaudeBackend(client=client), {}, agent="growth", shared={"instructions": {}, "answer": None})
     with pytest.raises(AgentError):
         run_agent(ctx, DEPARTMENTS["growth"], "x")
+
+
+def test_memory_from_other_cause_does_not_narrow_search(fresh_graph):
+    """Regression: a campaign-caused dairy incident must not stop the next dairy alert finding its chiller."""
+    from ingestor import ingest
+    r = ingest(fresh_graph, "ALERT SD-02: promise time up from 9.1 to 15.4 min. Pick time on Probiotic Buttermilk "
+                            "500ml is the main contributor.", "PER-015")
+    first, _ = investigate(fresh_graph, r["alert_id"], ScriptedBackend(), save_run=False)
+    assert first["root_cause"]["id"] == "CMP-01"
+    answer, inv = investigate(fresh_graph, "ALT-001", ScriptedBackend(), save_run=False)
+    assert answer["root_cause"]["id"] == "EQ-SD04-CHA1" and answer["amplifier"]["id"] == "CMP-01"
