@@ -13,7 +13,8 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from db import get_client
-from investigator import investigate
+from llm import ClaudeBackend, ScriptedBackend, default_backend
+from orchestrator import investigate
 from tools import get_artifacts, run
 
 TENANTS = set(os.getenv("TENANTS", "dashmart,freshloop").split(","))
@@ -52,15 +53,21 @@ def artifacts(ids: str = Query(..., description="comma-separated Artifact ids"),
 
 
 @app.get("/api/investigate/{alert_id}")
-async def investigate_stream(alert_id: str, tenant: str = "dashmart"):
+async def investigate_stream(alert_id: str, tenant: str = "dashmart", backend: str | None = None):
     g = tenant_graph(tenant)
+    if backend not in (None, "claude", "scripted"):
+        raise HTTPException(400, "backend must be claude or scripted")
+    try:
+        model = {"claude": ClaudeBackend, "scripted": ScriptedBackend}.get(backend, default_backend)()
+    except Exception as e:  # e.g. no Anthropic credentials configured
+        raise HTTPException(400, f"backend unavailable: {e}")
     loop = asyncio.get_running_loop()
     queue: asyncio.Queue = asyncio.Queue()
     done = object()
 
     def work():
         try:
-            investigate(g, alert_id, emit=lambda ev: loop.call_soon_threadsafe(queue.put_nowait, ev))
+            investigate(g, alert_id, model, emit=lambda ev: loop.call_soon_threadsafe(queue.put_nowait, ev))
         except Exception as e:
             loop.call_soon_threadsafe(queue.put_nowait, {"type": "error", "data": {"message": str(e)}})
         finally:
