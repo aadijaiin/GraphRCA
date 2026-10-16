@@ -4,6 +4,7 @@
     python model_check.py glm gpt-oss qwen      # only model ids containing any of these words
     python model_check.py --models z-ai/glm-5.3 openai/gpt-oss-120b
     python model_check.py --timeout 20
+    Ctrl+C skips the model being checked.
 
 Uses LOCAL_MODEL_URL and LOCAL_MODEL_KEY (same as the local backend). Each model gets one tiny request with one
 tool; a usable model replies within the timeout and calls the tool with valid JSON.
@@ -34,6 +35,9 @@ def check(client, model, timeout):
             max_tokens=1024, temperature=0.2)
     except OpenAIError as e:
         return f"{time.monotonic() - t0:6.1f}s  FAIL   {type(e).__name__}: {str(e)[:80]}"
+    except KeyboardInterrupt:  # Ctrl+C skips a model that is hanging; Ctrl+C twice quickly to quit
+        time.sleep(0.5)
+        return f"{time.monotonic() - t0:6.1f}s  SKIPPED (Ctrl+C)"
     secs = time.monotonic() - t0
     calls = r.choices[0].message.tool_calls or []
     if not calls:
