@@ -5,6 +5,7 @@ Usage:
     python seed/generate.py --graph test_x  # load into another graph
     python seed/generate.py --dry-run       # build and validate only
     python seed/generate.py --if-missing    # seed only if the graph does not exist (container start)
+    python seed/generate.py --tenant freshloop   # the small second tenant, in graph 'freshloop'
 
 Writes the ground truth for the eval set to eval/incidents.json.
 """
@@ -555,15 +556,24 @@ def load(graph_name, b):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--graph", default="dashmart")
+    ap.add_argument("--tenant", choices=["dashmart", "freshloop"], default="dashmart")
+    ap.add_argument("--graph", help="graph name (defaults to the tenant name)")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--if-missing", action="store_true", help="skip loading if the graph already exists")
     args = ap.parse_args()
+    args.graph = args.graph or args.tenant
     if args.if_missing:
         from db import get_client
         if args.graph in get_client().list_graphs():
             print(f"graph '{args.graph}' exists, skipping seed")
             return
+    if args.tenant == "freshloop":
+        from freshloop import build as build_freshloop
+        b, _ = build_freshloop()
+        if not args.dry_run:
+            n, m = load(args.graph, b)
+            print(f"loaded graph '{args.graph}': {n} nodes, {m} edges")
+        return
     b, incidents, impact = build()
     rels = validate(b, incidents)
     counts = defaultdict(int)
