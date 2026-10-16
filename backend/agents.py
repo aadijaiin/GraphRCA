@@ -104,11 +104,12 @@ T_IMPACT = graph_tool("impact_of",
                       "What a late supplier breaks: stores and SKUs it feeds, active campaigns on them, owners.",
                       {"supplier_id": STR})
 T_SEARCH = graph_tool("search_artifacts",
-                      "Full-text search over Slack messages, SOPs, ticket text, ticket titles and SKU names.",
+                      "Keyword search over Slack messages, SOPs, ticket text, ticket titles and SKU names. Hits are "
+                      "leads, not evidence. Use it only when your main tool found nothing, at most once.",
                       {"text": STR})
 T_PATH = graph_tool("connect_path", "Shortest path between two node ids in either direction (a link, not proof).",
                     {"from_id": STR, "to_id": STR})
-def _rank_people(ctx):
+def _rank_people(ctx, **_ignored):  # some models pass alert_id or similar; this tool needs none
     r = TOOLS["rank_people"](ctx.graph, investigation_id=ctx.inv.id)
     _emit_call(ctx, "rank_people", {}, r)
     payload = {"result": r["result"], "error": r["error"]}
@@ -204,7 +205,7 @@ def run_agent(ctx, agent, task_text, max_calls=MAX_CALLS):
 
 # ---- orchestrator ----
 
-def _recall(ctx):
+def _recall(ctx, **_ignored):
     r = TOOLS["recall_memory"](ctx.graph, alert_id=ctx.alert["alert_id"])
     _emit_call(ctx, "recall_memory", {"alert_id": ctx.alert["alert_id"]}, r)
     if not r["error"]:
@@ -249,7 +250,13 @@ def validate_answer(ctx, raw):
     rows = run(ctx.graph, "finding_sources", investigation_id=ctx.inv.id, finding_ids=sorted(used))
     srcs = {r["finding_id"]: r["sources"] for r in rows}
     for c in kept["claims"]:
-        c["sources"] = list(dict.fromkeys(s for i in c["finding_ids"] for s in srcs.get(i, [])))
+        # Keyword-search hits are leads, not evidence: use them only if no structural Finding backs the claim,
+        # and then only the top 3.
+        strong = [i for i in c["finding_ids"] if findings[i]["tool"] != "search_artifacts"]
+        if strong:
+            c["sources"] = list(dict.fromkeys(s for i in strong for s in srcs.get(i, [])))
+        else:
+            c["sources"] = list(dict.fromkeys(s for i in c["finding_ids"] for s in srcs.get(i, [])[:3]))
     cited = {n for i in used for n in findings[i]["cites"]}
 
     def entity(eid, what):
@@ -299,7 +306,14 @@ ORCHESTRATOR = Agent(
     "5. Finish with submit_answer. Every claim and action must list the Finding refs (F1, F2, ...) that support it; claims "
     "without valid Finding ids are dropped. root_cause_id and amplifier_id must be node ids that a cited "
     "Finding mentions. The root cause is what started the problem; an amplifier made it worse. Use null when "
-    "there is none. Recommend concrete actions with the owner to contact.",
+    "there is none.\n\n"
+    "Write each claim as one specific fact with names and ids: who decided what, when, and why (for example the "
+    "decision id, the person, the equipment, the ticket and its status). Write each action as an instruction to a "
+    "named person, using the owners the Findings report:\n"
+    "- an open ticket with no assignee: assign it to the owner of the equipment it is about (not close it);\n"
+    "- an active campaign that amplifies the problem: pause or cap it for that store and tell its owner;\n"
+    "- a demand spike with no fault: ask the campaign owner to cap it or raise replenishment.\n"
+    "Cite the Findings that name each owner.",
     [ToolSpec("recall_memory", "Past incidents similar to this alert and the plan learned for the pattern.", {},
               _recall),
      ToolSpec("dispatch", "Give one department a task. Returns its report and the Findings it wrote.",
