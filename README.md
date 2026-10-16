@@ -19,7 +19,7 @@ python seed/generate.py --tenant freshloop    # second tenant -> graph 'freshloo
 
 cd backend
 python investigate_cli.py ALT-001             # orchestrator + department agents, with cited sources
-pytest -q tests                               # 43 tests: seed, tools, agents, memory, ingestion, tenants, MCP
+pytest -q tests                               # 51 tests, no network: seed, tools, agents, memory, ingestion, tenants, MCP, backends
 uvicorn app:app --port 8000                   # API
 
 cd ../frontend && npm ci && npm run dev       # UI on :5173 (proxies /api to :8000)
@@ -32,9 +32,10 @@ Full stack in containers: `docker compose --profile app up -d --build`, then ope
 Agents choose their tool calls through a backend:
 
 - **Claude** (`claude-opus-5-5` via the Anthropic SDK) when `ANTHROPIC_API_KEY` is set. Override with `BRAIN_MODEL` and `BRAIN_EFFORT` (default `medium`). Requests use server-side refusal fallbacks.
+- **Local**: a self-hosted model behind an OpenAI-compatible API (Ollama, vLLM, LM Studio, llama.cpp), aimed at **gpt-oss-20b** with a 16k context. Set `LOCAL_MODEL_URL` (for example `http://mainframe:11434/v1`), `LOCAL_MODEL` (default `gpt-oss:20b`) and optionally `LOCAL_REASONING_EFFORT`. See `docs/RUNBOOK.md` section 13.
 - **Scripted**: a fixed, deterministic policy per agent (`backend/scripted.py`) with the same tools, graph writes and events. Used by the tests, for offline runs, and as a fallback.
 
-Force one with `BRAIN_BACKEND=claude|scripted`, `--backend` on the CLI, or `?backend=` on the API. The UI header and every Investigation node record which backend produced a run.
+Force one with `BRAIN_BACKEND=claude|local|scripted`, `--backend` on the CLI, or `?backend=` on the API. Without that, the order is local (if `LOCAL_MODEL_URL` is set), then Claude (if credentials exist), then scripted. The UI header and every Investigation node record which backend produced a run.
 
 ## How it works
 
@@ -102,7 +103,7 @@ The tools load these files at runtime; no agent writes Cypher.
 
 ## Credits
 
-FalkorDB and its Python client, FastAPI, Uvicorn, Pydantic, the Anthropic Python SDK, the MCP Python SDK, React, Vite, react-force-graph-2d.
+FalkorDB and its Python client, FastAPI, Uvicorn, Pydantic, the Anthropic Python SDK, the OpenAI Python SDK (as a client for OpenAI-compatible local servers), the MCP Python SDK, React, Vite, react-force-graph-2d.
 
 ## AI use
 

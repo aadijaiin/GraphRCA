@@ -116,8 +116,8 @@ pytest -q tests
 Expected:
 
 ```
-.............................................                            [100%]
-45 passed in 1.34s
+...................................................                      [100%]
+51 passed in 2.28s
 ```
 
 Tests seed their own throwaway graphs (`test_dashmart`, `test_memory`, `test_freshloop`) and delete them afterwards; they do not touch `dashmart` or `freshloop`. They use the scripted backend, so they need no API key and make no network calls.
@@ -289,6 +289,41 @@ python investigate_cli.py ALT-001 --backend claude
 
 The flow, tools, graph writes and events are the same as with the scripted backend; only the choice of tool calls and the wording of the answer come from the model. Each investigation makes several model calls (the orchestrator plus one loop per dispatched department), so expect it to take tens of seconds and to cost real API usage. Claims still have to cite Findings, so the validator may drop some; the CLI prints how many.
 
+## 13. Using a self-hosted model (gpt-oss-20b)
+
+Host the model on the big machine and point the app at it. Both servers below expose an OpenAI-compatible API.
+
+**Ollama** on the model host:
+
+```bash
+ollama pull gpt-oss:20b
+OLLAMA_HOST=0.0.0.0:11434 OLLAMA_CONTEXT_LENGTH=16384 ollama serve
+```
+
+`OLLAMA_CONTEXT_LENGTH` matters: Ollama's default context is smaller than 16k, and a truncated prompt shows up as an agent that forgets its tools or never calls `submit_answer`.
+
+**vLLM** on the model host (GPU):
+
+```bash
+vllm serve openai/gpt-oss-20b --max-model-len 16384 --port 8000
+```
+
+Then on the machine running GraphRCA:
+
+```bash
+export LOCAL_MODEL_URL=http://<model-host>:11434/v1    # vLLM: http://<model-host>:8000/v1
+export LOCAL_MODEL=gpt-oss:20b                         # vLLM: openai/gpt-oss-20b
+export LOCAL_REASONING_EFFORT=medium                   # low | medium | high
+curl -s $LOCAL_MODEL_URL/models | head -c 200          # should list the model
+cd backend && python investigate_cli.py ALT-001 --backend local
+```
+
+The first line should read `backend local:gpt-oss:20b`. If the server is down you get `local model server at ... is not reachable` straight away, from the CLI and as an HTTP 400 from the API.
+
+Keep the model port off the public internet: the servers have no authentication by default. Use a private network, a VPN, or an SSH tunnel (`ssh -N -L 11434:localhost:11434 <model-host>`, then `LOCAL_MODEL_URL=http://localhost:11434/v1`). If you put a proxy with a key in front, set `LOCAL_MODEL_KEY`.
+
+What to watch on the first runs (the CLI prints all of it): does the orchestrator call `recall_memory` first, dispatch Facilities after Store Ops names a unit, and cite refs like `F3` that the validator accepts? `Validator dropped N item(s)` means it cited something that was not a Finding.
+
 ## Daily commands
 
 | Task | Command |
@@ -316,6 +351,8 @@ The flow, tools, graph writes and events are the same as with the scripted backe
 | `ModuleNotFoundError: No module named 'db'` | CLI, tests or uvicorn run from the wrong folder | Run them from `backend/` |
 | Generator raises `AssertionError: ALT-00x: decision ...` or `amplifiers ...` | An edit to `seed/` created a second valid answer or broke a planted chain | Revert or adjust the edit; the message names the alert and what the graph now returns |
 | Investigation says `backend unavailable: no Anthropic credentials` | `--backend claude` / `?backend=claude` with no key or profile | Set `ANTHROPIC_API_KEY` (or `ant auth login`), or use the scripted backend |
+| `local model server at ... is not reachable` | Model server down, wrong `LOCAL_MODEL_URL`, or the port is firewalled | `curl $LOCAL_MODEL_URL/models` from this machine; check `OLLAMA_HOST=0.0.0.0` on the host |
+| Local model answers in prose, `No answer was submitted.` | Model without reliable tool calling, or context truncated | Use gpt-oss-20b or another tool-calling model; set the server context to 16k (`OLLAMA_CONTEXT_LENGTH=16384`, vLLM `--max-model-len 16384`) |
 | An investigation recalls memories you did not expect | Memory persists in the graph across runs | Reseed to start clean (`python seed/generate.py`) |
 | `ModuleNotFoundError: No module named 'mcp'` or `'anthropic'` | Requirements installed before Phase 2 | `pip install -r backend/requirements.txt` |
 | `test_eval_file_matches_generator` fails | `seed/` changed but `eval/incidents.json` was not regenerated | `python seed/generate.py`, then commit the updated `eval/incidents.json` |
