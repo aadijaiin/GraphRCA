@@ -1,8 +1,8 @@
 [
  {
   "type": "investigation_started",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "alert_id": "ALT-001",
    "tenant": "dashmart",
@@ -12,8 +12,8 @@
  },
  {
   "type": "tool_call",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S1",
    "agent": "orchestrator",
@@ -25,8 +25,8 @@
  },
  {
   "type": "nodes_touched",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S1",
    "agent": "orchestrator",
@@ -39,8 +39,8 @@
  },
  {
   "type": "edges_touched",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S1",
    "agent": "orchestrator",
@@ -60,10 +60,11 @@
  },
  {
   "type": "finding_written",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
-   "finding_id": "FND-ALT-001-20261016114030-1ad0-01",
+   "finding_id": "FND-ALT-001-20261016155425-cd5b-01",
+   "ref": "F1",
    "agent": "orchestrator",
    "task_id": null,
    "tool": "get_alert",
@@ -77,9 +78,30 @@
   }
  },
  {
+  "type": "model_started",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "orchestrator",
+   "backend": "scripted"
+  }
+ },
+ {
+  "type": "model_turn",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "orchestrator",
+   "seconds": 0.0,
+   "tool_calls": [
+    "recall_memory"
+   ]
+  }
+ },
+ {
   "type": "tool_call",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S2",
    "agent": "orchestrator",
@@ -91,19 +113,40 @@
  },
  {
   "type": "memory_recalled",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "memories": [],
    "plan": null
   }
  },
  {
-  "type": "task_created",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "type": "model_started",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
-   "task_id": "TSK-ALT-001-20261016114030-1ad0-01",
+   "agent": "orchestrator",
+   "backend": "scripted"
+  }
+ },
+ {
+  "type": "model_turn",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "orchestrator",
+   "seconds": 0.0,
+   "tool_calls": [
+    "dispatch"
+   ]
+  }
+ },
+ {
+  "type": "task_created",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "task_id": "TSK-ALT-001-20261016155425-cd5b-01",
    "department": "store_ops",
    "instruction": "Find any recent decision that changed how Probiotic Buttermilk 500ml is handled at SD-04, who made it and why.",
    "round": 1
@@ -111,19 +154,61 @@
  },
  {
   "type": "task_created",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
-   "task_id": "TSK-ALT-001-20261016114030-1ad0-02",
+   "task_id": "TSK-ALT-001-20261016155425-cd5b-02",
    "department": "growth",
    "instruction": "Check whether any active campaign is pushing Probiotic Buttermilk 500ml in SD-04 around 2026-10-16T08:30:00Z.",
    "round": 1
   }
  },
  {
+  "type": "model_started",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "store_ops",
+   "backend": "scripted"
+  }
+ },
+ {
+  "type": "model_turn",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "store_ops",
+   "seconds": 0.0,
+   "tool_calls": [
+    "trace_decision"
+   ]
+  }
+ },
+ {
+  "type": "model_started",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "growth",
+   "backend": "scripted"
+  }
+ },
+ {
+  "type": "model_turn",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "growth",
+   "seconds": 0.0,
+   "tool_calls": [
+    "find_amplifiers"
+   ]
+  }
+ },
+ {
   "type": "tool_call",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S3",
    "agent": "growth",
@@ -135,8 +220,8 @@
  },
  {
   "type": "nodes_touched",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S3",
    "agent": "growth",
@@ -152,8 +237,8 @@
  },
  {
   "type": "edges_touched",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S3",
    "agent": "growth",
@@ -193,8 +278,8 @@
  },
  {
   "type": "tool_call",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S4",
    "agent": "store_ops",
@@ -206,8 +291,8 @@
  },
  {
   "type": "nodes_touched",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S4",
    "agent": "store_ops",
@@ -231,8 +316,8 @@
  },
  {
   "type": "edges_touched",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S4",
    "agent": "store_ops",
@@ -312,12 +397,13 @@
  },
  {
   "type": "finding_written",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
-   "finding_id": "FND-ALT-001-20261016114030-1ad0-02",
+   "finding_id": "FND-ALT-001-20261016155425-cd5b-02",
+   "ref": "F2",
    "agent": "growth",
-   "task_id": "TSK-ALT-001-20261016114030-1ad0-02",
+   "task_id": "TSK-ALT-001-20261016155425-cd5b-02",
    "tool": "find_amplifiers",
    "summary": "CMP-01 Summer Coolers (owner Ananya Rao) is active, started 3.0h before the alert, promotes the SKU in this store.",
    "cites": [
@@ -334,13 +420,33 @@
   }
  },
  {
-  "type": "finding_written",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "type": "model_started",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
-   "finding_id": "FND-ALT-001-20261016114030-1ad0-03",
+   "agent": "growth",
+   "backend": "scripted"
+  }
+ },
+ {
+  "type": "model_turn",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "growth",
+   "seconds": 0.0,
+   "tool_calls": []
+  }
+ },
+ {
+  "type": "finding_written",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "finding_id": "FND-ALT-001-20261016155425-cd5b-03",
+   "ref": "F3",
    "agent": "store_ops",
-   "task_id": "TSK-ALT-001-20261016114030-1ad0-01",
+   "task_id": "TSK-ALT-001-20261016155425-cd5b-01",
    "tool": "trace_decision",
    "summary": "DEC-209 by Vikram Sethi (Store Manager) at 2026-10-16T03:15:00Z: moved from Front chiller A1 to Back freezer B2. Causes: EQ-SD04-CHA1 (Equipment, owner Rajesh Nair); FAC-882 (Ticket, open, unassigned).",
    "cites": [
@@ -370,46 +476,111 @@
   }
  },
  {
-  "type": "task_completed",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "type": "model_started",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
-   "task_id": "TSK-ALT-001-20261016114030-1ad0-01",
-   "department": "store_ops",
-   "report": "DEC-209 by Vikram Sethi (Store Manager) at 2026-10-16T03:15:00Z: moved from Front chiller A1 to Back freezer B2. Causes: EQ-SD04-CHA1 (Equipment, owner Rajesh Nair); FAC-882 (Ticket, open, unassigned). (FND-ALT-001-20261016114030-1ad0-03)",
-   "finding_ids": [
-    "FND-ALT-001-20261016114030-1ad0-03"
-   ]
+   "agent": "store_ops",
+   "backend": "scripted"
+  }
+ },
+ {
+  "type": "model_turn",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "store_ops",
+   "seconds": 0.0,
+   "tool_calls": []
   }
  },
  {
   "type": "task_completed",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
-   "task_id": "TSK-ALT-001-20261016114030-1ad0-02",
+   "task_id": "TSK-ALT-001-20261016155425-cd5b-02",
    "department": "growth",
-   "report": "CMP-01 Summer Coolers (owner Ananya Rao) is active, started 3.0h before the alert, promotes the SKU in this store. (FND-ALT-001-20261016114030-1ad0-02)",
+   "report": "CMP-01 Summer Coolers (owner Ananya Rao) is active, started 3.0h before the alert, promotes the SKU in this store. (F2)",
    "finding_ids": [
-    "FND-ALT-001-20261016114030-1ad0-02"
+    "FND-ALT-001-20261016155425-cd5b-02"
+   ],
+   "status": "done",
+   "unverified_refs": []
+  }
+ },
+ {
+  "type": "task_completed",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "task_id": "TSK-ALT-001-20261016155425-cd5b-01",
+   "department": "store_ops",
+   "report": "DEC-209 by Vikram Sethi (Store Manager) at 2026-10-16T03:15:00Z: moved from Front chiller A1 to Back freezer B2. Causes: EQ-SD04-CHA1 (Equipment, owner Rajesh Nair); FAC-882 (Ticket, open, unassigned). (F3)",
+   "finding_ids": [
+    "FND-ALT-001-20261016155425-cd5b-03"
+   ],
+   "status": "done",
+   "unverified_refs": []
+  }
+ },
+ {
+  "type": "model_started",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "orchestrator",
+   "backend": "scripted"
+  }
+ },
+ {
+  "type": "model_turn",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "orchestrator",
+   "seconds": 0.0,
+   "tool_calls": [
+    "dispatch"
    ]
   }
  },
  {
   "type": "task_created",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
-   "task_id": "TSK-ALT-001-20261016114030-1ad0-03",
+   "task_id": "TSK-ALT-001-20261016155425-cd5b-03",
    "department": "facilities",
    "instruction": "Store Ops traced the move at SD-04 to EQ-SD04-CHA1 (Front chiller A1). Check its tickets and who should fix it.",
    "round": 2
   }
  },
  {
+  "type": "model_started",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "facilities",
+   "backend": "scripted"
+  }
+ },
+ {
+  "type": "model_turn",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "facilities",
+   "seconds": 0.0,
+   "tool_calls": [
+    "equipment_status"
+   ]
+  }
+ },
+ {
   "type": "tool_call",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S5",
    "agent": "facilities",
@@ -422,8 +593,8 @@
  },
  {
   "type": "nodes_touched",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S5",
    "agent": "facilities",
@@ -442,8 +613,8 @@
  },
  {
   "type": "edges_touched",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S5",
    "agent": "facilities",
@@ -493,12 +664,13 @@
  },
  {
   "type": "finding_written",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
-   "finding_id": "FND-ALT-001-20261016114030-1ad0-04",
+   "finding_id": "FND-ALT-001-20261016155425-cd5b-04",
+   "ref": "F4",
    "agent": "facilities",
-   "task_id": "TSK-ALT-001-20261016114030-1ad0-03",
+   "task_id": "TSK-ALT-001-20261016155425-cd5b-03",
    "tool": "equipment_status",
    "summary": "Front chiller A1 (EQ-SD04-CHA1, owner Rajesh Nair) has open unassigned ticket(s) FAC-882.",
    "cites": [
@@ -520,9 +692,30 @@
   }
  },
  {
+  "type": "model_started",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "facilities",
+   "backend": "scripted"
+  }
+ },
+ {
+  "type": "model_turn",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "facilities",
+   "seconds": 0.0,
+   "tool_calls": [
+    "find_expert"
+   ]
+  }
+ },
+ {
   "type": "tool_call",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S6",
    "agent": "facilities",
@@ -534,8 +727,8 @@
  },
  {
   "type": "nodes_touched",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S6",
    "agent": "facilities",
@@ -549,8 +742,8 @@
  },
  {
   "type": "edges_touched",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S6",
    "agent": "facilities",
@@ -585,12 +778,13 @@
  },
  {
   "type": "finding_written",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
-   "finding_id": "FND-ALT-001-20261016114030-1ad0-05",
+   "finding_id": "FND-ALT-001-20261016155425-cd5b-05",
+   "ref": "F5",
    "agent": "facilities",
-   "task_id": "TSK-ALT-001-20261016114030-1ad0-03",
+   "task_id": "TSK-ALT-001-20261016155425-cd5b-03",
    "tool": "find_expert",
    "summary": "People with history on EQ-SD04-CHA1: Suresh Pillai (2 touches), Rajesh Nair (1 touches, owner).",
    "cites": [
@@ -603,23 +797,65 @@
   }
  },
  {
-  "type": "task_completed",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "type": "model_started",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
-   "task_id": "TSK-ALT-001-20261016114030-1ad0-03",
+   "agent": "facilities",
+   "backend": "scripted"
+  }
+ },
+ {
+  "type": "model_turn",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "facilities",
+   "seconds": 0.0,
+   "tool_calls": []
+  }
+ },
+ {
+  "type": "task_completed",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "task_id": "TSK-ALT-001-20261016155425-cd5b-03",
    "department": "facilities",
-   "report": "Front chiller A1 (EQ-SD04-CHA1, owner Rajesh Nair) has open unassigned ticket(s) FAC-882. (FND-ALT-001-20261016114030-1ad0-04) People with history on EQ-SD04-CHA1: Suresh Pillai (2 touches), Rajesh Nair (1 touches, owner). (FND-ALT-001-20261016114030-1ad0-05)",
+   "report": "Front chiller A1 (EQ-SD04-CHA1, owner Rajesh Nair) has open unassigned ticket(s) FAC-882. (F4) People with history on EQ-SD04-CHA1: Suresh Pillai (2 touches), Rajesh Nair (1 touches, owner). (F5)",
    "finding_ids": [
-    "FND-ALT-001-20261016114030-1ad0-04",
-    "FND-ALT-001-20261016114030-1ad0-05"
+    "FND-ALT-001-20261016155425-cd5b-04",
+    "FND-ALT-001-20261016155425-cd5b-05"
+   ],
+   "status": "done",
+   "unverified_refs": []
+  }
+ },
+ {
+  "type": "model_started",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "orchestrator",
+   "backend": "scripted"
+  }
+ },
+ {
+  "type": "model_turn",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "orchestrator",
+   "seconds": 0.0,
+   "tool_calls": [
+    "connect_path"
    ]
   }
  },
  {
   "type": "tool_call",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S7",
    "agent": "orchestrator",
@@ -632,8 +868,8 @@
  },
  {
   "type": "nodes_touched",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S7",
    "agent": "orchestrator",
@@ -646,8 +882,8 @@
  },
  {
   "type": "edges_touched",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S7",
    "agent": "orchestrator",
@@ -667,10 +903,11 @@
  },
  {
   "type": "finding_written",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
-   "finding_id": "FND-ALT-001-20261016114030-1ad0-06",
+   "finding_id": "FND-ALT-001-20261016155425-cd5b-06",
+   "ref": "F6",
    "agent": "orchestrator",
    "task_id": null,
    "tool": "connect_path",
@@ -684,9 +921,30 @@
   }
  },
  {
+  "type": "model_started",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "orchestrator",
+   "backend": "scripted"
+  }
+ },
+ {
+  "type": "model_turn",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
+  "data": {
+   "agent": "orchestrator",
+   "seconds": 0.0,
+   "tool_calls": [
+    "submit_answer"
+   ]
+  }
+ },
+ {
   "type": "tool_call",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "step": "S8",
    "agent": "orchestrator",
@@ -699,8 +957,8 @@
  },
  {
   "type": "answer_ready",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
    "answer": {
     "summary": "Root cause: Front chiller A1 at SD-04 is down, so Probiotic Buttermilk 500ml was moved far from packing. Amplifier: Summer Coolers pushed demand for it.",
@@ -720,14 +978,14 @@
      {
       "text": "SD-04 promise_time_min rose from 9.5 to 16.0; the alert attributes it to Probiotic Buttermilk 500ml.",
       "finding_ids": [
-       "FND-ALT-001-20261016114030-1ad0-01"
+       "FND-ALT-001-20261016155425-cd5b-01"
       ],
       "sources": []
      },
      {
       "text": "Vikram Sethi (Store Manager) moved Probiotic Buttermilk 500ml from Front chiller A1 to Back freezer B2 at 2026-10-16T03:15:00Z (DEC-209).",
       "finding_ids": [
-       "FND-ALT-001-20261016114030-1ad0-03"
+       "FND-ALT-001-20261016155425-cd5b-03"
       ],
       "sources": [
        "ART-A01",
@@ -741,7 +999,7 @@
      {
       "text": "The move was made because of ticket FAC-882 (Front chiller A1 not cooling (SD-04)), status open, unassigned.",
       "finding_ids": [
-       "FND-ALT-001-20261016114030-1ad0-03"
+       "FND-ALT-001-20261016155425-cd5b-03"
       ],
       "sources": [
        "ART-A01",
@@ -755,7 +1013,7 @@
      {
       "text": "Campaign Summer Coolers (CMP-01), owned by Ananya Rao, went live 3.0h before the alert and promotes Probiotic Buttermilk 500ml in SD-04.",
       "finding_ids": [
-       "FND-ALT-001-20261016114030-1ad0-02"
+       "FND-ALT-001-20261016155425-cd5b-02"
       ],
       "sources": [
        "ART-A05"
@@ -764,7 +1022,7 @@
      {
       "text": "CMP-01 and EQ-SD04-CHA1 are linked in the graph in 2 hops: CMP-01 TARGETS SD-04 -> SD-04 HAS_EQUIPMENT EQ-SD04-CHA1.",
       "finding_ids": [
-       "FND-ALT-001-20261016114030-1ad0-06"
+       "FND-ALT-001-20261016155425-cd5b-06"
       ],
       "sources": []
      }
@@ -773,16 +1031,16 @@
      {
       "text": "Pause Summer Coolers for SD-04; tell Ananya Rao.",
       "finding_ids": [
-       "FND-ALT-001-20261016114030-1ad0-02",
-       "FND-ALT-001-20261016114030-1ad0-03"
+       "FND-ALT-001-20261016155425-cd5b-02",
+       "FND-ALT-001-20261016155425-cd5b-03"
       ]
      },
      {
       "text": "Assign FAC-882 to Rajesh Nair (Facilities Lead (Delhi)), who owns Front chiller A1; Suresh Pillai has the most history with this unit.",
       "finding_ids": [
-       "FND-ALT-001-20261016114030-1ad0-03",
-       "FND-ALT-001-20261016114030-1ad0-04",
-       "FND-ALT-001-20261016114030-1ad0-05"
+       "FND-ALT-001-20261016155425-cd5b-03",
+       "FND-ALT-001-20261016155425-cd5b-04",
+       "FND-ALT-001-20261016155425-cd5b-05"
       ]
      }
     ]
@@ -792,24 +1050,24 @@
  },
  {
   "type": "memory_written",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
-   "memory_id": "MEM-E-ALT-001-20261016114030-1ad0",
+   "memory_id": "MEM-E-ALT-001-20261016155425-cd5b",
    "kind": "episodic",
    "content": "2026-10-16 promise_time_min at SD-04 on Probiotic Buttermilk 500ml: root cause Front chiller A1 at SD-04 (chiller), amplified by Summer Coolers.",
-   "investigation_id": "INV-ALT-001-20261016114030-1ad0"
+   "investigation_id": "INV-ALT-001-20261016155425-cd5b"
   }
  },
  {
   "type": "memory_written",
-  "ts": "2026-10-16T11:40:30Z",
-  "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+  "ts": "2026-10-16T15:54:25Z",
+  "investigation_id": "INV-ALT-001-20261016155425-cd5b",
   "data": {
-   "memory_id": "MEM-P-ALT-001-20261016114030-1ad0",
+   "memory_id": "MEM-P-ALT-001-20261016155425-cd5b",
    "kind": "procedural",
    "content": "For promise_time_min alerts on dairy SKUs caused by a chiller: dispatch store_ops, growth, facilities together in round 1; Facilities should check chiller units at the alert's store first.",
-   "investigation_id": "INV-ALT-001-20261016114030-1ad0",
+   "investigation_id": "INV-ALT-001-20261016155425-cd5b",
    "created": true
   }
  }

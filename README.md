@@ -42,7 +42,7 @@ Force one with `BRAIN_BACKEND=claude|local|scripted`, `--backend` on the CLI, or
 ```
 Alert ──> Orchestrator ── recall_memory ──> similar past incidents + learned plan
               │
-              ├── dispatch (round 1, parallel) ──> Store Ops   trace_decision
+              ├── dispatch([tasks]) round 1, run in parallel ──> Store Ops   trace_decision
               │                                └> Growth      find_amplifiers
               ├── dispatch (round 2, from a Finding) ─> Facilities  equipment_status, find_expert
               ├── connect_path / rank_people
@@ -51,6 +51,7 @@ Alert ──> Orchestrator ── recall_memory ──> similar past incidents +
 ```
 
 - **One generic agent runner** (`backend/agents.py`). Each agent is its own model loop with its own prompt and tool subset: orchestrator, `store_ops`, `facilities`, `growth`, `supply`.
+- **Parallel rounds.** `dispatch` takes a list of tasks and the code runs them concurrently (`BRAIN_MAX_PARALLEL`, default 4), so parallelism does not depend on the model making several tool calls at once. Bad items are rejected one by one, a failing department is marked failed without stopping the others, and refs a report mentions but did not find are flagged.
 - **Agents coordinate only through the graph.** The orchestrator writes Task nodes; every department tool call writes a Finding that CITES the real nodes it touched, written by code from the tool result. Departments read each other's work with `read_findings`. Facilities is dispatched in round 2 because a Store Ops Finding names the broken unit.
 - **Answers are validated.** A claim survives only if it cites Findings of this investigation, and its sources are read from the graph, not from the model.
 - **Memory** is written back into the tenant graph. Recall merges the plans of all similar incidents. Store Ops and Growth always run, so memory can add departments or move them earlier but never narrow the search. Measured: ALT-005 (dairy, chiller) takes 1 dispatch round after ALT-001 instead of 2.

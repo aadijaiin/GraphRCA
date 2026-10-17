@@ -26,7 +26,7 @@ Tools by agent:
 
 | Agent | Tools |
 | --- | --- |
-| Orchestrator | recall_memory, dispatch (one Task per call; several calls in one turn run in parallel), read_findings, connect_path, rank_people, submit_answer |
+| Orchestrator | recall_memory, dispatch (`tasks: [{department, instruction}]`, run in parallel, up to `BRAIN_MAX_PARALLEL`), read_findings, connect_path, rank_people, submit_answer |
 | Store Ops | get_alert, trace_decision, search_artifacts, read_findings |
 | Facilities | equipment_status, find_expert, search_artifacts, read_findings |
 | Growth | get_alert, find_amplifiers, search_artifacts, read_findings |

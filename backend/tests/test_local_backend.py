@@ -87,3 +87,23 @@ def test_missing_url(monkeypatch):
     monkeypatch.delenv("LOCAL_MODEL_URL", raising=False)
     with pytest.raises(AgentError, match="LOCAL_MODEL_URL"):
         LocalBackend()
+
+
+@pytest.mark.parametrize("raw,clean", [("dispatch<|channel|>commentary", "dispatch"), ("functions.find_amplifiers",
+                                       "find_amplifiers"), (" find_amplifiers ", "find_amplifiers")])
+def test_harmony_tokens_stripped_from_tool_names(graph, raw, clean):
+    """build.nvidia.com's gpt-oss-20b returned 'dispatch<|channel|>commentary' as the tool name."""
+    fake = FakeOpenAI([Msg(calls=[("c1", raw, '{"alert_id": "ALT-001"}')]), Msg("done")])
+    ctx = growth_ctx(graph, LocalBackend(base_url="http://x/v1", client=fake))
+    run_agent(ctx, DEPARTMENTS["growth"], "Find amplifiers.")
+    replayed = fake.requests[1]["messages"][2]["tool_calls"][0]["function"]["name"]
+    assert replayed == clean
+    assert clean != "find_amplifiers" or any(f["tool"] == "find_amplifiers" for f in ctx.inv.findings().values())
+
+
+def test_unknown_tool_error_lists_valid_tools(graph):
+    fake = FakeOpenAI([Msg(calls=[("c1", "lookup_campaigns", "{}")]), Msg("done")])
+    ctx = growth_ctx(graph, LocalBackend(base_url="http://x/v1", client=fake))
+    run_agent(ctx, DEPARTMENTS["growth"], "Find amplifiers.")
+    err = json.loads(fake.requests[1]["messages"][-1]["content"])["error"]
+    assert "find_amplifiers" in err and "lookup_campaigns" in err

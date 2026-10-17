@@ -17,126 +17,32 @@ const NODE_COLORS = {
   Ticket: '#f59e0b', Decision: '#10b981', Store: '#10b981',
 };
 
-// Ink-on-cream palette tuned for the light Antimetal-style canvas
-const SPHERE_THEMES = {
-  system: { light: '#4a4440', base: '#1a1614', shadow: '#1a1614', rim: '#1a1614', glow: 'rgba(26, 22, 20, 0.16)', labelAccent: '#1a1614' },
-  decisionActive: { light: '#a3ad4a', base: '#7d8a24', shadow: '#7d8a24', rim: '#5f6a17', glow: 'rgba(125, 138, 36, 0.22)', labelAccent: '#7d8a24' },
-  decisionSuperseded: { light: '#c4c2b8', base: '#a8a59b', shadow: '#a8a59b', rim: '#8d8a80', glow: 'rgba(168, 165, 155, 0.2)', labelAccent: '#8d8a80' },
-  ticket: { light: '#f59a6a', base: '#e8622b', shadow: '#e8622b', rim: '#c44f1f', glow: 'rgba(232, 98, 43, 0.24)', labelAccent: '#e8622b' },
-  staleDoc: { light: '#e57a6f', base: '#c8382d', shadow: '#c8382d', rim: '#9d2a21', glow: 'rgba(200, 56, 45, 0.26)', labelAccent: '#c8382d' },
-  doc: { light: '#a99ad8', base: '#7f6cc4', shadow: '#7f6cc4', rim: '#634fa8', glow: 'rgba(127, 108, 196, 0.2)', labelAccent: '#7f6cc4' },
-  silverWhite: { light: '#8f8a82', base: '#6e6a63', shadow: '#6e6a63', rim: '#55514b', glow: 'rgba(110, 106, 99, 0.18)', labelAccent: '#55514b' },
-  restricted: { light: '#e57a6f', base: '#c8382d', shadow: '#c8382d', rim: '#9d2a21', glow: 'rgba(200, 56, 45, 0.26)', labelAccent: '#c8382d' },
-};
+// dispatch takes a list of tasks; show the departments, not [object Object]
+const formatArgs = (args) =>
+  Object.values(args)
+    .filter((v) => v !== null)
+    .map((v) => (Array.isArray(v) ? v.map((t) => t?.department ?? JSON.stringify(t)).join(" + ") : String(v)))
+    .join(", ");
 
-function getNodeSphereTheme(node, isStale, isRestricted) {
-  if (node.type === 'Doc') {
-    if (isStale || node.status === 'STALE') {
-      return SPHERE_THEMES.staleDoc;
-    }
-    return SPHERE_THEMES.doc;
-  }
-  if (node.type === 'Decision') {
-    if (node.status === 'SUPERSEDED') {
-      return SPHERE_THEMES.decisionSuperseded;
-    }
-    return SPHERE_THEMES.decisionActive;
-  }
-  if (node.type === 'System') {
-    return SPHERE_THEMES.system;
-  }
-  if (node.type === 'Ticket') {
-    return SPHERE_THEMES.ticket;
-  }
-  if (node.type === 'Person' || node.type === 'Team') {
-    return SPHERE_THEMES.silverWhite;
-  }
-  if (isStale) {
-    return SPHERE_THEMES.staleDoc;
-  }
-  return SPHERE_THEMES.silverWhite;
-}
-const mockCompanyLinks = mockLinks.map(([source, target, label]) => ({ source, target, label }));
+export default function App() {
+  const fgRef = useRef();
+  const [graph, setGraph] = useState({ nodes: [], links: [] });
+  const [alerts, setAlerts] = useState([]);
+  const [loadError, setLoadError] = useState(null);
 
-function pairKey(a, b) { return [String(a), String(b)].sort().join('::'); }
-function getNodeId(value) { return typeof value === 'object' ? value?.id : value; }
-function displayType(node) { return node?.type === 'Doc' ? 'DOCUMENT' : node?.type?.toUpperCase() || 'NODE'; }
-
-function drawPill(ctx, x, y, w, h, r) {
-  if (typeof ctx.roundRect === 'function') {
-    ctx.roundRect(x, y, w, h, r);
-  } else {
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
-  }
-}
-
-function getNodeRadius(node) {
-  switch (node?.type) {
-    case 'Team': return 32;
-    case 'System': return 28;
-    case 'Person': return 26;
-    case 'Decision': return 26;
-    case 'Ticket': return 26;
-    case 'Doc': return 25;
-    default: return 24;
-  }
-}
-
-function createCollideForce(radiusFn, strength = 0.72, iterations = 2) {
-  let nodes = [];
-  function force(alpha) {
-    const n = nodes.length;
-    // Maintain overlap protection even during low-alpha settled and idle states
-    const alphaFactor = Math.max(0.28, Math.min(alpha * 3, 1));
-    for (let it = 0; it < iterations; it++) {
-      for (let i = 0; i < n; i++) {
-        const nodeA = nodes[i];
-        const rA = typeof radiusFn === 'function' ? radiusFn(nodeA) : radiusFn;
-        for (let j = i + 1; j < n; j++) {
-          const nodeB = nodes[j];
-          const rB = typeof radiusFn === 'function' ? radiusFn(nodeB) : radiusFn;
-          const minDistance = rA + rB;
-          let dx = nodeB.x - nodeA.x;
-          let dy = nodeB.y - nodeA.y;
-          let l2 = dx * dx + dy * dy;
-          if (l2 < minDistance * minDistance) {
-            if (l2 === 0) {
-              dx = (Math.random() - 0.5) * 1e-2;
-              dy = (Math.random() - 0.5) * 1e-2;
-              l2 = dx * dx + dy * dy;
-            }
-            const l = Math.sqrt(l2);
-            const overlap = (minDistance - l) / l;
-            const adjust = overlap * 0.5 * strength * alphaFactor;
-            const adjX = dx * adjust;
-            const adjY = dy * adjust;
-            if (nodeA.fx == null) {
-              nodeA.x -= adjX;
-              nodeA.vx = (nodeA.vx || 0) - adjX * 0.45;
-            }
-            if (nodeB.fx == null) {
-              nodeB.x += adjX;
-              nodeB.vx = (nodeB.vx || 0) + adjX * 0.45;
-            }
-          }
-        }
-      }
-    }
-  }
-  force.initialize = function(_nodes) {
-    nodes = _nodes;
-  };
-  return force;
-}
+  // investigation state, driven only by events
+  const queue = useRef([]);
+  const touchedNodes = useRef(new Map()); // id -> step
+  const touchedEdges = useRef(new Set());
+  const [, setTick] = useState(0);
+  const [active, setActive] = useState(null); // {alertId, mode}
+  const [steps, setSteps] = useState([]); // timeline: memory, tasks and tool calls in arrival order
+  const [answer, setAnswer] = useState(null);
+  const [model, setModel] = useState(null);
+  const [findings, setFindings] = useState(0);
+  const [memories, setMemories] = useState([]);
+  const [drawer, setDrawer] = useState(null);
+  const [notice, setNotice] = useState(null);
 
 function createAmbientForce(getMotionState, getReducedMotion) {
   let nodes = [];
@@ -1225,96 +1131,56 @@ function CompanyGraph({
             <RotateCcw size={10} /> Replay
           </button>
         </div>
-        <div className="graph-zoom-controls">
-          <button aria-label="Zoom out" title="Zoom out" onClick={() => fgRef.current?.zoom(Math.max(.35, (fgRef.current?.zoom() || 1) / 1.3), 220)}><Minus size={13} /></button>
-          <button aria-label="Reset graph view" title="Fit & Reset" onClick={() => { setFocusedNode(activeScenario.path[0]); setGraphFilter('all'); fgRef.current?.zoomToFit(650, 55); }}><RotateCcw size={12} /></button>
-          <button aria-label="Zoom in" title="Zoom in" onClick={() => fgRef.current?.zoom((fgRef.current?.zoom() || 1) * 1.3, 220)}><Plus size={13} /></button>
-        </div>
-      </div>
-    </div>
-  </section>;
-}
+        {notice && <div className="notice">{notice}</div>}
+      </main>
 
-function XRayInspector({
-  activeScenario, focusedNode, setFocusedNode,
-  hoveredNode, setHoveredNode, hoveredHopIndex, setHoveredHopIndex,
-  animatingHopIndex, revealedHopCount,
-  companyNodes, staleDocs, currentRole, runScenario
-}) {
-  const [copiedCypher, setCopiedCypher] = useState(false);
-  const nodeById = useMemo(() => Object.fromEntries(companyNodes.map((node) => [node.id, node])), [companyNodes]);
-  const focused = nodeById[focusedNode];
-  const accessAllowed = activeScenario.id === 'access' && (activeScenario.severity === 'AUTHORIZED' || currentRole.id === 'dev' && !activeScenario.blocked);
-  const isAccessBlocked = activeScenario.id === 'access' && !accessAllowed;
+      <section className="panel">
+        <h2>Investigation {findings > 0 && <span className="count">{findings} findings</span>}</h2>
+        {!steps.length && <p className="muted">Click an alert to start an investigation.</p>}
+        <ol className="steps">
+          {steps.map((s) =>
+            s.kind === "tool" ? (
+              <li key={s.key} className="tool">
+                <span className={`agent a-${s.agent}`}>{s.agent}</span>
+                <code>{s.tool}</code>
+                <span className="args">{formatArgs(s.args)}</span>
+                <span className="size">{s.nodes} nodes · {s.edges} edges</span>
+              </li>
+            ) : s.kind === "task" ? (
+              <li key={s.key} className="task">
+                <span className="round">round {s.round}</span> → <span className={`agent a-${s.agent}`}>{s.agent}</span>
+                <span className="instr">{s.text}</span>
+              </li>
+            ) : (
+              <li key={s.key} className="memory">{s.text}</li>
+            )
+          )}
+        </ol>
 
-  return <aside className="panel xray-panel">
-    <div className="panel-header xray-header">
-      <div>
-        <div className="panel-eyebrow">DECISION PROVENANCE</div>
-        <h2>Graph proof</h2>
-      </div>
-      <button className="icon-button small rerun-button" onClick={() => runScenario(activeScenario.id)} title="Replay investigation">
-        <RotateCcw size={13} />
-      </button>
-    </div>
-
-    {isAccessBlocked && (
-      <div className="security-alert-box">
-        <ShieldAlert size={14} className="alert-icon" />
-        <div className="alert-body">
-          <div className="alert-title">403 Access Denied · RBAC Policy</div>
-          <div className="alert-desc">Sales role lacks administrative permissions for Rider Payout Ledger.</div>
-        </div>
-      </div>
-    )}
-
-    <div className="trace-summary">
-      <div className={`trace-status ${activeScenario.id === 'access' ? (accessAllowed ? 'status-authorized' : 'status-blocked') : activeScenario.id === 'rootcause' ? 'status-warning' : activeScenario.id === 'checkout' ? 'status-critical' : 'status-updated'}`}>
-        {activeScenario.id === 'access' ? (accessAllowed ? <ShieldCheck size={13} /> : <ShieldAlert size={13} />) : activeScenario.id === 'rootcause' ? <CircleAlert size={13} /> : activeScenario.id === 'checkout' ? <Flame size={13} /> : <CheckCircle2 size={13} />}
-        <span>{activeScenario.id === 'access' ? (accessAllowed ? 'Traversal authorized' : 'Traversal blocked') : activeScenario.id === 'rootcause' ? 'Root cause identified' : activeScenario.id === 'checkout' ? 'Assignee proposed' : 'Knowledge changed'}</span>
-        <span className="status-severity">{activeScenario.severity}</span>
-      </div>
-      <h3>{activeScenario.title}</h3>
-      <p>{activeScenario.summary}</p>
-    </div>
-
-    <div className="inspector-section-heading">
-      <span>HOP-BY-HOP TRACE</span>
-      <span className="hop-count">{activeScenario.hops.length} STEPS</span>
-    </div>
-
-    <div className="hop-list">
-      {activeScenario.hops.map((hop, index) => {
-        const I = hop.kind === 'Ticket' ? ClipboardList : hop.kind === 'System' ? Boxes : hop.kind === 'Person' ? Users : hop.kind === 'Store' ? Store : hop.kind === 'Decision' ? GitBranch : hop.kind === 'Team' ? Users : FileText;
-        const isSelected = focusedNode === hop.id;
-        const isHovered = hoveredHopIndex === index || hoveredNode === hop.id;
-        const isAnimating = animatingHopIndex === index;
-        const isTraversed = index < revealedHopCount;
-        const isPending = index >= revealedHopCount && animatingHopIndex >= 0;
-        const stale = hop.stale || staleDocs.includes(hop.id);
-        const isDenied = hop.denied && !accessAllowed;
-
-        return <button
-          className={`hop-row ${isSelected ? 'selected' : ''} ${isHovered ? 'hop-hovered' : ''} ${isAnimating ? 'hop-animating' : ''} ${isPending ? 'hop-pending' : ''} ${stale ? 'hop-stale' : ''} ${isDenied ? 'hop-denied' : ''}`}
-          key={`${hop.id}-${index}`}
-          onMouseEnter={() => {
-            setHoveredHopIndex(index);
-            setHoveredNode(hop.id);
-          }}
-          onMouseLeave={() => {
-            setHoveredHopIndex(null);
-            setHoveredNode(null);
-          }}
-          onClick={() => {
-            setFocusedNode(hop.id);
-          }}
-        >
-          <div className="hop-track">
-            <span className={`hop-index ${isAnimating ? 'index-animating' : isTraversed ? 'index-traversed' : ''} ${stale ? 'index-stale' : isDenied ? 'index-denied' : ''}`}>
-              {String(index + 1).padStart(2, '0')}
-            </span>
-            {index < activeScenario.hops.length - 1 && (
-              <span className={`hop-connector ${stale ? 'connector-stale' : isTraversed ? 'connector-active' : ''}`} />
+        {answer && (
+          <>
+            <h2>Answer</h2>
+            <p className="summary">{answer.summary}</p>
+            <ul className="claims">
+              {answer.claims.map((c, i) => (
+                <li key={i}>
+                  {c.text}{" "}
+                  {c.sources?.length > 0 && (
+                    <button className="cite" onClick={() => openSources(c.sources, `Sources for claim ${i + 1}`)}>
+                      {c.sources.length} source{c.sources.length > 1 ? "s" : ""}
+                    </button>
+                  )}
+                  <span className="steps-ref">{c.finding_ids.length} finding{c.finding_ids.length > 1 ? "s" : ""}</span>
+                </li>
+              ))}
+            </ul>
+            {answer.actions.length > 0 && (
+              <>
+                <h3>Recommended actions</h3>
+                <ul className="actions">
+                  {answer.actions.map((a, i) => <li key={i}>{a.text}</li>)}
+                </ul>
+              </>
             )}
           </div>
           <div className="hop-content">

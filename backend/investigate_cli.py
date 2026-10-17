@@ -12,29 +12,45 @@ from orchestrator import investigate
 from tools import get_artifacts
 
 
+def show(ev, quiet=False):
+    """Print progress as it happens, so a slow model is visibly waiting, not hung."""
+    d = ev["data"]
+    if ev["type"] == "memory_recalled":
+        plan = d["plan"]["departments"] if d["plan"] else None
+        print(f"  memory: {len(d['memories'])} similar incident(s), plan {plan}", flush=True)
+    elif ev["type"] == "task_created":
+        print(f"  round {d['round']}  -> {d['department']}: {d['instruction']}", flush=True)
+    elif ev["type"] == "tool_call":
+        if d["tool"] == "dispatch":
+            args = " + ".join(t.get("department", "?") for t in d["args"].get("tasks") or [])
+        else:
+            args = ", ".join(f"{k}={v!r}" for k, v in d["args"].items())
+        print(f"    {d['step']:<4} {d['agent']:<12} {d['tool']}({args})", flush=True)
+    elif ev["type"] == "model_started" and not quiet:
+        print(f"    ...  {d['agent']:<12} waiting for {d['backend']}", flush=True)
+    elif ev["type"] == "model_turn" and not quiet:
+        calls = ", ".join(d["tool_calls"]) or "no tool call"
+        print(f"    ...  {d['agent']:<12} replied in {d['seconds']}s ({calls})", flush=True)
+    elif ev["type"] == "task_completed" and (d.get("status") == "failed" or d.get("unverified_refs")):
+        flag = f"FAILED: {d['report']}" if d["status"] == "failed" else f"report cites refs it did not find: {d['unverified_refs']}"
+        print(f"  ! {d['department']}: {flag}", flush=True)
+    elif ev["type"] == "error":
+        print(f"  ERROR {d['message']}", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("alert_id", nargs="?", default="ALT-001")
     ap.add_argument("--graph", default="dashmart")
     ap.add_argument("--backend", choices=list(BACKENDS))
     ap.add_argument("--events", help="write the event log (docs/events.md) to this path")
+    ap.add_argument("--quiet", action="store_true", help="hide model wait/latency lines")
     args = ap.parse_args()
     backend = BACKENDS.get(args.backend, default_backend)()
 
-    answer, inv = investigate(args.graph, args.alert_id, backend)
-    print(f"Investigation {inv.id}  (graph '{args.graph}', backend {backend.name}, synthetic data)\n")
-    for ev in inv.events:
-        d = ev["data"]
-        if ev["type"] == "memory_recalled":
-            plan = d["plan"]["departments"] if d["plan"] else None
-            print(f"  memory: {len(d['memories'])} similar incident(s), plan {plan}")
-        elif ev["type"] == "task_created":
-            print(f"  round {d['round']}  -> {d['department']}: {d['instruction']}")
-        elif ev["type"] == "tool_call":
-            print(f"    {d['step']:<4} {d['agent']:<12} {d['tool']}({', '.join(f'{k}={v!r}' for k, v in d['args'].items())})")
-        elif ev["type"] == "error":
-            print(f"  ERROR {d['message']}")
-
+    print(f"Investigating {args.alert_id}  (graph '{args.graph}', backend {backend.name}, synthetic data)\n", flush=True)
+    answer, inv = investigate(args.graph, args.alert_id, backend, emit=lambda ev: show(ev, args.quiet))
+    print(f"\nInvestigation {inv.id}")
     print(f"\n{answer['summary']}\n")
     cited = []
     for c in answer["claims"]:

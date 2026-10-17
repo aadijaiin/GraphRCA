@@ -1,4 +1,4 @@
-// w_complete_task: a department reports back.
+// w_complete_task: a department reports back (status 'done', or 'failed' if its agent errored).
 MATCH (t:Task {id: $id})
-SET t.status = 'done', t.report = $report
+SET t.status = $status, t.report = $report
 RETURN t.id

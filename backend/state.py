@@ -108,9 +108,10 @@ class Investigation:
         self.emit("task_created", task_id=tid, department=department, instruction=instruction, round=round_)
         return tid
 
-    def complete_task(self, task_id, department, report, finding_ids):
-        write(self.graph, "w_complete_task", id=task_id, report=report)
-        self.emit("task_completed", task_id=task_id, department=department, report=report, finding_ids=finding_ids)
+    def complete_task(self, task_id, department, report, finding_ids, status="done", unverified_refs=()):
+        write(self.graph, "w_complete_task", id=task_id, report=report, status=status)
+        self.emit("task_completed", task_id=task_id, department=department, report=report, finding_ids=finding_ids,
+                  status=status, unverified_refs=list(unverified_refs))
 
     def resolve(self, ref_or_id):
         """Full Finding id for a short ref (or an id passed through unchanged)."""

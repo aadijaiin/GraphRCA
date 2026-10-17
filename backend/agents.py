@@ -5,6 +5,9 @@ loop and every graph-tool call it makes writes a Finding. Departments can read e
 read_findings. The orchestrator answers only by citing Finding ids, and the validator checks each one.
 """
 import json
+import os
+import re
+import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from typing import Callable
@@ -12,7 +15,10 @@ from typing import Callable
 from tools import TOOLS, run
 
 MAX_CALLS = 8    # tool calls per agent loop
-MAX_TASKS = 6    # department tasks per investigation (rounds are not capped: some models dispatch one per turn)
+MAX_TASKS = 6    # department tasks per investigation
+ROOT_LABELS = ("Equipment", "Campaign", "Supplier", "Decision")
+MAX_PARALLEL = int(os.getenv("BRAIN_MAX_PARALLEL", "4"))  # departments running at once (API rate limits)
+REF = re.compile(r"\bF\d+\b")
 
 
 @dataclass
@@ -21,7 +27,6 @@ class ToolSpec:
     description: str
     params: dict
     handler: Callable
-    parallel: bool = False  # several calls in one turn run concurrently
 
     def schema(self):
         return {"name": self.name, "description": self.description, "strict": True,
@@ -59,9 +64,12 @@ def _emit_call(ctx, tool, args, r=None):
     return step
 
 
-def graph_tool(name, description, params, finding=True):
-    """A department tool: runs one query-backed tool, emits events, and writes a Finding from the result."""
+def graph_tool(name, description, params, finding=True, bind_alert=False):
+    """A department tool: runs one query-backed tool, emits events, and writes a Finding from the result.
+    bind_alert: the alert id comes from the investigation, not the model (models confused it with Finding refs)."""
     def handler(ctx, **args):
+        if bind_alert:
+            args = {**args, "alert_id": ctx.alert["alert_id"]}
         r = TOOLS[name](ctx.graph, **args)
         _emit_call(ctx, name, args, r)
         payload = {"result": r["result"], "error": r["error"]}
@@ -84,15 +92,16 @@ def _read_findings(ctx, agent=None):
 STR, NSTR = {"type": "string"}, {"type": ["string", "null"]}
 KIND = {"type": ["string", "null"], "enum": ["chiller", "freezer", "rack", "scanner", None]}
 
-T_ALERT = graph_tool("get_alert", "The alert's store, SKU, metric and values.", {"alert_id": STR})
+T_ALERT = graph_tool("get_alert", "This investigation's alert: its store, SKU, metric and values.", {},
+                     bind_alert=True)
 T_TRACE = graph_tool(
     "trace_decision",
     "Latest decision that moved the alert's SKU in the alert's store before the alert: who made it, what it "
-    "changed, its causes (tickets, equipment) with owner/assignee, and source messages.", {"alert_id": STR})
+    "changed, its causes (tickets, equipment) with owner/assignee, and source messages.", {}, bind_alert=True)
 T_AMPS = graph_tool(
     "find_amplifiers",
     "Active campaigns that promote the alert's SKU in the alert's store and started before the alert, with "
-    "owners and launch messages.", {"alert_id": STR})
+    "owners and launch messages.", {}, bind_alert=True)
 T_EXPERT = graph_tool("find_expert", "People ranked by work history on an entity (equipment, ticket, SKU).",
                       {"entity_id": STR})
 T_EQUIP = graph_tool(
@@ -103,11 +112,12 @@ T_IMPACT = graph_tool("impact_of",
                       "What a late supplier breaks: stores and SKUs it feeds, active campaigns on them, owners.",
                       {"supplier_id": STR})
 T_SEARCH = graph_tool("search_artifacts",
-                      "Full-text search over Slack messages, SOPs, ticket text, ticket titles and SKU names.",
+                      "Keyword search over Slack messages, SOPs, ticket text, ticket titles and SKU names. Hits are "
+                      "leads, not evidence. Use it only when your main tool found nothing, at most once.",
                       {"text": STR})
 T_PATH = graph_tool("connect_path", "Shortest path between two node ids in either direction (a link, not proof).",
                     {"from_id": STR, "to_id": STR})
-def _rank_people(ctx):
+def _rank_people(ctx, **_ignored):  # some models pass alert_id or similar; this tool needs none
     r = TOOLS["rank_people"](ctx.graph, investigation_id=ctx.inv.id)
     _emit_call(ctx, "rank_people", {}, r)
     payload = {"result": r["result"], "error": r["error"]}
@@ -128,7 +138,8 @@ T_READ = ToolSpec("read_findings",
 DEPT_RULES = (
     "You work for DashMart, a fictional quick-commerce company (all data is synthetic). You investigate by calling "
     "your tools; every tool call is recorded as a Finding that other agents can read. Use only your tools, never "
-    "guess ids, and stop as soon as your task is answered. Finish with a short plain report (2 to 4 sentences) of "
+    "guess ids, and stop as soon as your task is answered: most tasks need 1 to 3 tool calls, and the main tool for "
+    "your department usually answers it in one. Finish with a short plain report (2 to 4 sentences) of "
     "what you found and the Finding ids that support it. If your tools show nothing relevant, say so.")
 
 DEPARTMENTS = {
@@ -145,6 +156,34 @@ DEPARTMENTS = {
 
 # ---- runner ----
 
+_TYPES = {"string": str, "array": list, "object": dict, "null": type(None), "integer": int, "number": (int, float),
+          "boolean": bool}
+
+
+def check_args(spec, args):
+    """Check tool arguments against the tool's schema, since self-hosted servers do not enforce it.
+    Unknown keys are dropped; missing keys, wrong types, values outside an enum, and Finding refs (F3) passed
+    where a node id belongs are errors the model can fix. Returns (clean_args, problem)."""
+    clean = {k: v for k, v in args.items() if k in spec.params}
+    for k, prop in spec.params.items():
+        if k not in clean:
+            if "null" in (prop["type"] if isinstance(prop["type"], list) else [prop["type"]]):
+                clean[k] = None
+                continue
+            return clean, f"missing argument {k!r}"
+        v = clean[k]
+        types = prop["type"] if isinstance(prop["type"], list) else [prop["type"]]
+        if not any(isinstance(v, _TYPES[t]) for t in types):
+            return clean, f"{k!r} must be {' or '.join(types)}"
+        if "enum" in prop and v not in prop["enum"]:
+            return clean, f"{k!r} must be one of {[e for e in prop['enum'] if e is not None]}" + (
+                " or null" if None in prop["enum"] else "")
+        if isinstance(v, str) and REF.fullmatch(v.strip()):
+            return clean, (f"{v!r} is a Finding ref, used only to cite evidence in submit_answer; {k!r} needs a "
+                           f"node id from the Findings, such as ALT-001, EQ-SD04-CHA1 or CMP-01")
+    return clean, None
+
+
 def _tool_result_block(call_id, payload):
     return {"type": "tool_result", "tool_use_id": call_id, "content": json.dumps(payload, default=str),
             **({"is_error": True} if payload.get("error") else {})}
@@ -157,7 +196,11 @@ def run_agent(ctx, agent, task_text, max_calls=MAX_CALLS):
     messages = [{"role": "user", "content": task_text}]
     history, used, reminded = [], 0, False
     for _ in range(max_calls + 3):
+        ctx.inv.emit("model_started", agent=agent.name, backend=ctx.backend.name)
+        t0 = time.monotonic()
         turn = ctx.backend.step(agent.name, agent.system, schemas, messages, history, ctx)
+        ctx.inv.emit("model_turn", agent=agent.name, seconds=round(time.monotonic() - t0, 1),
+                     tool_calls=[c.name for c in turn.calls])
         messages.append({"role": "assistant", "content": turn.content})
         if not turn.calls:
             if agent.finish_with and ctx.shared.get("answer") is None and not reminded:
@@ -170,13 +213,16 @@ def run_agent(ctx, agent, task_text, max_calls=MAX_CALLS):
         def execute(call, over_budget):
             spec = specs.get(call.name)
             if spec is None:
-                return {"error": f"unknown tool {call.name}"}
+                return {"error": f"unknown tool {call.name!r}; your tools are: {', '.join(specs)}"}
             if over_budget:
                 return {"error": "tool call budget exhausted; give your final report now"}
             if call.input is None:
                 return {"error": f"arguments for {call.name} were not a valid JSON object; call it again"}
+            args, problem = check_args(spec, call.input)
+            if problem:
+                return {"error": f"{call.name}: {problem}"}
             try:
-                return spec.handler(ctx, **call.input)
+                return spec.handler(ctx, **args)
             except TypeError as e:
                 return {"error": f"bad arguments: {e}"}
 
@@ -184,11 +230,7 @@ def run_agent(ctx, agent, task_text, max_calls=MAX_CALLS):
             ctx.shared["before_dispatch"]()
         budget = [used + i >= max_calls for i in range(len(turn.calls))]
         used += len(turn.calls)
-        if len(turn.calls) > 1 and all(specs.get(c.name) and specs[c.name].parallel for c in turn.calls):
-            with ThreadPoolExecutor(len(turn.calls)) as pool:
-                outputs = list(pool.map(execute, turn.calls, budget))
-        else:
-            outputs = [execute(c, b) for c, b in zip(turn.calls, budget)]
+        outputs = [execute(c, b) for c, b in zip(turn.calls, budget)]  # parallelism lives inside dispatch
         messages.append({"role": "user", "content": [_tool_result_block(c.id, o) for c, o in zip(turn.calls, outputs)]})
         history.extend({"name": c.name, "input": c.input, "output": o} for c, o in zip(turn.calls, outputs))
         if ctx.shared.get("answer") is not None:
@@ -198,7 +240,7 @@ def run_agent(ctx, agent, task_text, max_calls=MAX_CALLS):
 
 # ---- orchestrator ----
 
-def _recall(ctx):
+def _recall(ctx, **_ignored):
     r = TOOLS["recall_memory"](ctx.graph, alert_id=ctx.alert["alert_id"])
     _emit_call(ctx, "recall_memory", {"alert_id": ctx.alert["alert_id"]}, r)
     if not r["error"]:
@@ -206,25 +248,59 @@ def _recall(ctx):
     return {"result": r["result"], "error": r["error"]}
 
 
-def _dispatch(ctx, department, instruction):
-    if department not in DEPARTMENTS:
-        return {"error": f"unknown department {department}"}
-    if len(ctx.shared["order"]) >= MAX_TASKS:
-        return {"error": f"task limit ({MAX_TASKS}) reached; submit your answer"}
-    tid = ctx.inv.task(department, instruction, ctx.shared["round"])
-    ctx.shared["instructions"][tid] = instruction
-    with ctx.inv._lock:
-        ctx.shared["order"].append((ctx.shared["round"], list(DEPARTMENTS).index(department), department))
+def _run_task(ctx, tid, department, instruction):
+    """One department task, on its own thread. Never raises: a failing agent marks only its own task failed."""
     a = ctx.alert
     task = (f"Task {tid} from the orchestrator: {instruction}\n\nAlert {a['alert_id']} at store {a['store_id']}, "
             f"SKU {a['sku_id']} ({a['sku_name']}), {a['metric']} {a['before']} -> {a['after']} at {a['ts']}.")
     sub = replace(ctx, agent=department, task_id=tid)
-    report = run_agent(sub, DEPARTMENTS[department], task)
+    try:
+        report, status = run_agent(sub, DEPARTMENTS[department], task), "done"
+    except Exception as e:  # model error, refusal, timeout: the other departments carry on
+        report, status = f"failed: {type(e).__name__}: {e}", "failed"
     mine = [f for f in ctx.inv.findings().values() if f["task_id"] == tid]
-    ctx.inv.complete_task(tid, department, report, [f["finding_id"] for f in mine])
-    return {"task_id": tid, "department": department, "report": report,
-            "findings": [{"ref": ctx.inv.ref_of.get(f["finding_id"], f["finding_id"]), "tool": f["tool"],
-                          "summary": f["summary"]} for f in mine]}
+    refs = [ctx.inv.ref_of.get(f["finding_id"], f["finding_id"]) for f in mine]
+    unverified = sorted(set(REF.findall(report)) - set(refs))
+    ctx.inv.complete_task(tid, department, report, [f["finding_id"] for f in mine], status, unverified)
+    return {"task_id": tid, "department": department, "status": status, "report": report,
+            "findings": [{"ref": r, "tool": f["tool"], "summary": f["summary"]} for r, f in zip(refs, mine)],
+            # refs a report mentions that are not this task's Findings: the report is not evidence for them
+            "unverified_refs": unverified}
+
+
+def _dispatch(ctx, tasks):
+    """Run several department tasks in parallel from one call. Bad items are rejected one by one."""
+    accepted, rejected = [], []
+    rnd = ctx.shared["round"]
+    with ctx.inv._lock:
+        busy = ctx.shared["round_depts"].setdefault(rnd, set())
+        for t in tasks or []:
+            dept = (t or {}).get("department")
+            instr = ((t or {}).get("instruction") or "").strip()
+            if dept not in DEPARTMENTS:
+                rejected.append({"department": dept, "error": f"unknown department; use one of {list(DEPARTMENTS)}"})
+            elif dept in busy:
+                rejected.append({"department": dept, "error": "already dispatched this round; merge the instructions"})
+            elif not instr:
+                rejected.append({"department": dept, "error": "empty instruction"})
+            elif len(ctx.shared["order"]) + len(accepted) >= MAX_TASKS:
+                rejected.append({"department": dept, "error": f"task limit ({MAX_TASKS}) reached; submit your answer"})
+            else:
+                busy.add(dept)
+                accepted.append((dept, instr))
+        for dept, _ in accepted:
+            ctx.shared["order"].append((rnd, list(DEPARTMENTS).index(dept), dept))
+    created = []
+    for dept, instr in accepted:  # create Task nodes in a stable order before any department starts
+        tid = ctx.inv.task(dept, instr, rnd)
+        ctx.shared["instructions"][tid] = instr
+        created.append((tid, dept, instr))
+    results = []
+    if created:
+        with ThreadPoolExecutor(min(MAX_PARALLEL, len(created))) as pool:
+            results = list(pool.map(lambda c: _run_task(ctx, *c), created))
+    return {"round": rnd, "results": results + rejected,
+            "note": "Reports are each department's own words. Only Findings are evidence: cite Finding refs."}
 
 
 def validate_answer(ctx, raw):
@@ -243,16 +319,41 @@ def validate_answer(ctx, raw):
     rows = run(ctx.graph, "finding_sources", investigation_id=ctx.inv.id, finding_ids=sorted(used))
     srcs = {r["finding_id"]: r["sources"] for r in rows}
     for c in kept["claims"]:
-        c["sources"] = list(dict.fromkeys(s for i in c["finding_ids"] for s in srcs.get(i, [])))
+        # Keyword-search hits are leads, not evidence: use them only if no structural Finding backs the claim,
+        # and then only the top 3.
+        strong = [i for i in c["finding_ids"] if findings[i]["tool"] != "search_artifacts"]
+        if strong:
+            c["sources"] = list(dict.fromkeys(s for i in strong for s in srcs.get(i, [])))
+        else:
+            c["sources"] = list(dict.fromkeys(s for i in c["finding_ids"] for s in srcs.get(i, [])[:3]))
     cited = {n for i in used for n in findings[i]["cites"]}
+
+    structural = {n for i in used if findings[i]["tool"] != "search_artifacts" for n in findings[i]["cites"]}
 
     def entity(eid, what):
         if not eid:
             return None
+        rows = run(ctx.graph, "node_brief", id=eid)
+        if not rows:
+            dropped.append({"kind": what, "id": eid, "reason": "no such node"})
+            return None
+        b = rows[0]
+        if what == "amplifier" and b["label"] != "Campaign":
+            dropped.append({"kind": what, "id": eid, "reason": f"an amplifier must be a Campaign, not a {b['label']}"})
+            return None
+        if what == "root_cause" and b["label"] == "Ticket":  # the ticket records the fault; the unit is the cause
+            subject = run(ctx.graph, "ticket_subject", id=eid)
+            if subject:
+                eid, b = subject[0]["equipment_id"], run(ctx.graph, "node_brief", id=subject[0]["equipment_id"])[0]
+        if what == "root_cause" and b["label"] not in ROOT_LABELS:
+            dropped.append({"kind": what, "id": eid, "reason": f"a root cause must be one of {ROOT_LABELS}"})
+            return None
         if eid not in cited:
             dropped.append({"kind": what, "id": eid, "reason": "not cited by a kept finding"})
             return None
-        b = run(ctx.graph, "node_brief", id=eid)[0]
+        if eid not in structural:  # keyword hits alone cannot establish a cause (and would poison memory)
+            dropped.append({"kind": what, "id": eid, "reason": "only keyword-search findings mention it"})
+            return None
         name = f"{b['name']} at {ctx.alert['store_id']}" if b["label"] == "Equipment" else b["name"]
         return {"id": eid, "label": b["label"], "name": name,
                 "kind": b["kind"] if b["label"] == "Equipment" else b["label"].lower()}
@@ -281,10 +382,11 @@ ORCHESTRATOR = Agent(
     "Departments: store_ops (store decisions, placement, pick flow), facilities (equipment, faults, tickets, who "
     "fixes them), growth (campaigns and demand), supply (suppliers and inbound stock).\n\n"
     "How to work:\n"
-    "1. Call recall_memory first. Always dispatch store_ops and growth in the first round. If memory returns a "
-    "plan learned from similar past incidents, add its departments to that first round and pass the memory's hint in the instruction. A memory is a hint "
+    "1. Call recall_memory first. Then make ONE dispatch call for round 1 containing store_ops and growth, plus "
+    "every department in the memory plan if one is returned; they run in parallel. Add the plan's departments and pass the memory's hint in the instruction. A memory is a hint "
     "about where to look first, not evidence: confirm it with this investigation's Findings.\n"
-    "2. Dispatch several departments in the same turn when their work is independent; they run in parallel.\n"
+    "2. Put all independent tasks in a single dispatch call. A department's report is its own summary, not "
+    "evidence: rely on the Findings listed with it.\n"
     "3. When one department's Finding opens work for another (for example Store Ops finds a decision caused by "
     "broken equipment), dispatch that department next with the specific ids. At most 6 tasks in total.\n"
     "4. Use connect_path to check whether entities from different departments' Findings are actually linked "
@@ -292,13 +394,24 @@ ORCHESTRATOR = Agent(
     "to the incident.\n"
     "5. Finish with submit_answer. Every claim and action must list the Finding refs (F1, F2, ...) that support it; claims "
     "without valid Finding ids are dropped. root_cause_id and amplifier_id must be node ids that a cited "
-    "Finding mentions. The root cause is what started the problem; an amplifier made it worse. Use null when "
-    "there is none. Recommend concrete actions with the owner to contact.",
+    "Finding mentions. The root cause is the thing that failed (usually Equipment, otherwise a Campaign, Supplier "
+    "or Decision; a ticket only records a fault). The amplifier, if any, must be a Campaign that made it worse. Use null when "
+    "there is none.\n\n"
+    "Write each claim as one specific fact with names and ids: who decided what, when, and why (for example the "
+    "decision id, the person, the equipment, the ticket and its status). Write each action as an instruction to a "
+    "named person, using the owners the Findings report:\n"
+    "- an open ticket with no assignee: assign it to the owner of the equipment it is about (not close it);\n"
+    "- an active campaign that amplifies the problem: pause or cap it for that store and tell its owner;\n"
+    "- a demand spike with no fault: ask the campaign owner to cap it or raise replenishment.\n"
+    "Cite the Findings that name each owner.",
     [ToolSpec("recall_memory", "Past incidents similar to this alert and the plan learned for the pattern.", {},
               _recall),
-     ToolSpec("dispatch", "Give one department a task. Returns its report and the Findings it wrote.",
-              {"department": {"type": "string", "enum": list(DEPARTMENTS)}, "instruction": STR}, _dispatch,
-              parallel=True),
+     ToolSpec("dispatch", "Give tasks to one or more departments in ONE call; they run in parallel. Returns each "
+              "department's report and the Findings it wrote.",
+              {"tasks": {"type": "array", "minItems": 1, "items": {
+                  "type": "object", "additionalProperties": False, "required": ["department", "instruction"],
+                  "properties": {"department": {"type": "string", "enum": list(DEPARTMENTS)}, "instruction": STR}}}},
+              _dispatch),
      T_READ, T_PATH, T_RANK,
      ToolSpec("submit_answer", "Submit the final answer. Ends the investigation.",
               {"summary": STR, "root_cause_id": NSTR, "amplifier_id": NSTR, "claims": CLAIM, "actions": CLAIM},

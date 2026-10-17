@@ -7,11 +7,13 @@
 | investigation_started | alert_id, tenant, graph_enabled, model (`scripted` or a Claude model id) |
 | memory_recalled | memories: [{id, kind, content}], plan (departments in order, or null) |
 | task_created | task_id, department, instruction, round |
+| model_started | agent, backend (a model call is in flight) |
+| model_turn | agent, seconds, tool_calls (names) |
 | tool_call | step, agent, tool, args |
 | nodes_touched | step, node_ids |
 | edges_touched | step, edges: [{type, from, to}] |
 | finding_written | finding_id, agent, task_id, tool, summary, cites: [node ids], sources: [artifact ids] |
-| task_completed | task_id, department, report, finding_ids |
+| task_completed | task_id, department, status (`done`/`failed`), report, finding_ids, unverified_refs (refs the report mentions that are not its own Findings) |
 | answer_ready | answer (see tool_contract.md), dropped: claims the validator removed |
 | memory_written | memory_id, kind (episodic/procedural), content, investigation_id |
 | node_created | node_id, label, props (from the Ingestor / simulate-event) |

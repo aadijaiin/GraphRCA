@@ -322,6 +322,16 @@ The first line should read `backend local:gpt-oss:20b`. If the server is down yo
 
 Keep the model port off the public internet: the servers have no authentication by default. Use a private network, a VPN, or an SSH tunnel (`ssh -N -L 11434:localhost:11434 <model-host>`, then `LOCAL_MODEL_URL=http://localhost:11434/v1`). If you put a proxy with a key in front, set `LOCAL_MODEL_KEY`.
 
+**Hosted endpoints (build.nvidia.com and similar).** The same settings work with `LOCAL_MODEL_URL=https://integrate.api.nvidia.com/v1` and `LOCAL_MODEL_KEY=nvapi-...`. Free-tier models can be overloaded: on 2026-10-16 `z-ai/glm-5.3` timed out even on a two-word request. Before an investigation, find a model that is answering and can call tools:
+
+```bash
+python model_check.py glm gpt-oss qwen3 --timeout 30
+# z-ai/glm-5.3                                       30.0s  FAIL   APITimeoutError: Request timed out.
+# <some-model>                                        2.1s  OK     get_alert({'alert_id': 'ALT-001'})
+```
+
+Pick a model marked `OK`. Passing is necessary but not sufficient, so then run a full investigation on it.
+
 What to watch on the first runs (the CLI prints all of it): does the orchestrator call `recall_memory` first, dispatch Facilities after Store Ops names a unit, and cite refs like `F3` that the validator accepts? `Validator dropped N item(s)` means it cited something that was not a Finding.
 
 ## Daily commands
@@ -352,6 +362,7 @@ What to watch on the first runs (the CLI prints all of it): does the orchestrato
 | Generator raises `AssertionError: ALT-00x: decision ...` or `amplifiers ...` | An edit to `seed/` created a second valid answer or broke a planted chain | Revert or adjust the edit; the message names the alert and what the graph now returns |
 | Investigation says `backend unavailable: no Anthropic credentials` | `--backend claude` / `?backend=claude` with no key or profile | Set `ANTHROPIC_API_KEY` (or `ant auth login`), or use the scripted backend |
 | `local model server at ... is not reachable` | Model server down, wrong `LOCAL_MODEL_URL`, or the port is firewalled | `curl $LOCAL_MODEL_URL/models` from this machine; check `OLLAMA_HOST=0.0.0.0` on the host |
+| `APITimeoutError` / `Request timed out` from a hosted model | Free-tier endpoint overloaded or queued | `python model_check.py` to find a responsive model, or use your own GPU |
 | Local model answers in prose, `No answer was submitted.` | Model without reliable tool calling, or context truncated | Use gpt-oss-20b or another tool-calling model; set the server context to 16k (`OLLAMA_CONTEXT_LENGTH=16384`, vLLM `--max-model-len 16384`) |
 | An investigation recalls memories you did not expect | Memory persists in the graph across runs | Reseed to start clean (`python seed/generate.py`) |
 | `ModuleNotFoundError: No module named 'mcp'` or `'anthropic'` | Requirements installed before Phase 2 | `pip install -r backend/requirements.txt` |
