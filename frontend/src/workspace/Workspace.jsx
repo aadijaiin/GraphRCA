@@ -7,12 +7,13 @@ import InvestigationGraph from './InvestigationGraph.jsx';
 import { TENANT, edgeKey, useInvestigation } from './useInvestigation.js';
 
 const REPLAYS = new Set(['ALT-001']); // alerts with a recorded run under public/runs/
-const MODELS = [
-  { id: '', label: 'Server default' },
-  { id: 'scripted', label: 'Scripted' },
-  { id: 'claude', label: 'Claude' },
-  { id: 'local', label: 'Local model' },
+// Fallback if the API cannot be asked; normally the list comes from /api/backends (labels name the real model).
+const DEFAULT_MODELS = [
+  { id: 'local', label: 'Server · gpt-oss-20b', available: true },
+  { id: 'scripted', label: 'Scripted (no model)', available: true },
 ];
+const BACKEND_KEY = 'blinkbrain.backend';
+const savedBackend = () => { try { return localStorage.getItem(BACKEND_KEY) || ''; } catch { return ''; } };
 
 const pretty = (agent) => String(agent || '').split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 const when = (ts) => (ts ? ts.replace('T', ' ').replace(/:00Z$|Z$/, '') + ' UTC' : '');
@@ -57,7 +58,7 @@ function AppRail({ onBackHome }) {
   </nav>;
 }
 
-function Header({ onBackHome, online, active, model, backend, setBackend }) {
+function Header({ onBackHome, online, active, model, backend, setBackend, models }) {
   return <header className="topbar">
     <div className="topbar-crumbs">
       <button type="button" className="topbar-home-pill" onClick={onBackHome}>← Overview</button>
@@ -76,7 +77,11 @@ function Header({ onBackHome, online, active, model, backend, setBackend }) {
       <label className="role-dropdown" title="Model backend for live investigations">
         <Cpu size={12} className="role-icon" />
         <select value={backend} onChange={(e) => setBackend(e.target.value)} aria-label="Model backend">
-          {MODELS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+          {models.map((m) => (
+            <option key={m.id} value={m.id} disabled={!m.available} title={m.hint || ''}>
+              {m.label}{m.available ? '' : ' (not configured)'}
+            </option>
+          ))}
         </select>
         <ChevronDown size={11} className="role-chevron" />
       </label>
@@ -347,7 +352,12 @@ export default function Workspace({ onBackHome, autoStart }) {
   const [alerts, setAlerts] = useState([]);
   const [online, setOnline] = useState(null);
   const [loadError, setLoadError] = useState(null);
-  const [backend, setBackend] = useState('');
+  const [models, setModels] = useState(DEFAULT_MODELS);
+  const [backend, setBackendState] = useState(savedBackend);
+  const setBackend = (id) => {
+    setBackendState(id);
+    try { localStorage.setItem(BACKEND_KEY, id); } catch { /* private mode: the choice just is not remembered */ }
+  };
   const [focusStep, setFocusStep] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [drawer, setDrawer] = useState(null);
@@ -365,6 +375,17 @@ export default function Workspace({ onBackHome, autoStart }) {
         setOnline(true);
       })
       .catch((e) => { setOnline(false); setLoadError(String(e.message || e)); });
+    fetch('/api/backends')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('no /api/backends'))))
+      .then((list) => {
+        // server model first, then scripted, then anything else the server offers
+        const order = { local: 0, scripted: 1 };
+        const sorted = [...list].sort((a, b) => (order[a.id] ?? 2) - (order[b.id] ?? 2));
+        setModels(sorted);
+        setBackendState((cur) => (sorted.some((m) => m.id === cur && m.available)
+          ? cur : (sorted.find((m) => m.available) || sorted[0]).id));
+      })
+      .catch(() => setBackendState((cur) => cur || 'local'));
   }, []);
 
   // deep link for demos: /app?alert=ALT-001&mode=replay, or a landing-page launch
@@ -421,7 +442,7 @@ export default function Workspace({ onBackHome, autoStart }) {
   return <div className="app-shell">
     <AppRail onBackHome={onBackHome} />
     <div className="app-frame">
-      <Header onBackHome={onBackHome} online={online} active={active} model={run.model} backend={backend} setBackend={setBackend} />
+      <Header onBackHome={onBackHome} online={online} active={active} model={run.model} backend={backend} setBackend={setBackend} models={models} />
       <div className="app-body">
         <main className="main-content">
           <Overview graph={graph} alerts={alerts} run={run} touched={touched} edges={edges} />
