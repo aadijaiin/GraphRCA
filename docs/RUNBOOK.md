@@ -238,6 +238,8 @@ Expected:
 
 Open http://localhost:5173 for the landing page, or http://localhost:5173/app for the workbench ("Launch demo" goes there too). The dev server proxies `/api` to port 8000, so step 8 must be running.
 
+**Why :5173 and :8000 both show the app:** :5173 is the Vite dev server (live source, hot reload) and forwards `/api` to :8000. :8000 is FastAPI: the API, plus the last *built* UI from `frontend/dist`, so Docker and deployments need only one port. The UI on :8000 only changes after `npm run build`, so develop on :5173.
+
 What you should see on `/app`:
 
 1. Alert cards, newest first (ALT-001 at SD-04 first; **View all 10** shows the rest), and the top bar says **FalkorDB live**.
@@ -361,7 +363,7 @@ What to watch on the first runs (the CLI prints all of it): does the orchestrato
 | `failed to connect to the docker API at unix:///.../docker.sock` | Docker Desktop is not running | Start Docker Desktop (`open -a Docker` on macOS), wait for `docker info` to succeed, retry |
 | `Bind for 0.0.0.0:3000 failed: port is already allocated` (or 6379) | Another FalkorDB/Redis, or a second clone's compose, already holds the port | `docker ps` to find it. Reuse the running FalkorDB, or stop it, or change the host port in `docker-compose.yml` and set `FALKORDB_PORT` |
 | `redis.exceptions.ConnectionError: Error 61 connecting to localhost:6379. Connection refused.` | FalkorDB is not running | `docker compose up -d falkordb` |
-| `/api/health` returns `Internal Server Error` (HTTP 500) | API is up but FalkorDB is down; there is no fallback store by design | Start FalkorDB; no API restart needed |
+| API returns HTTP 503 `FalkorDB is not reachable at localhost:6379` (UI: "Cannot reach the backend"); older builds show HTTP 500 and `Error 61 ... Connection refused` in the backend terminal | Docker Desktop is not running (e.g. after a restart), so FalkorDB is down; there is no fallback store by design | Start Docker Desktop, then `docker compose up -d falkordb`; no API restart needed. Graph data persists in `falkordb-data/` |
 | UI shows "Cannot reach the backend" | API not running, or FalkorDB down | Check step 8 and `/api/health` |
 | UI loads but the alert list is empty, or CLI says `no alert ALT-001` | Graph not seeded (e.g. after wiping `falkordb-data`) | `python seed/generate.py` |
 | `ERROR: [Errno 48] ... address already in use` on port 8000 | Docker `app` container or another uvicorn is running | `docker compose --profile app stop app`, or `lsof -i :8000` and stop that process, or use `--port 8001` (then update the proxy in `frontend/vite.config.js`) |
