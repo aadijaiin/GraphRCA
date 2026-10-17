@@ -10,7 +10,8 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from redis.exceptions import ConnectionError as GraphConnectionError
 from fastapi.staticfiles import StaticFiles
 
 from db import get_client
@@ -23,6 +24,14 @@ TENANTS = set(os.getenv("TENANTS", "dashmart,freshloop").split(","))
 DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
 app = FastAPI(title="DashMart Brain")
+
+
+@app.exception_handler(GraphConnectionError)
+def graph_down(request, exc):
+    """FalkorDB is the only store; say so plainly instead of a bare 500 and a stack trace."""
+    where = f"{os.getenv('FALKORDB_HOST', 'localhost')}:{os.getenv('FALKORDB_PORT', '6379')}"
+    return JSONResponse(status_code=503, content={
+        "detail": f"FalkorDB is not reachable at {where}. Start Docker Desktop, then: docker compose up -d falkordb"})
 
 
 def tenant_graph(tenant: str) -> str:
