@@ -19,6 +19,15 @@ MAX_TASKS = 6    # department tasks per investigation
 ROOT_LABELS = ("Equipment", "Campaign", "Supplier", "Decision")
 MAX_PARALLEL = int(os.getenv("BRAIN_MAX_PARALLEL", "4"))  # departments running at once (API rate limits)
 REF = re.compile(r"\bF\d+\b")
+# Look-alike dashes models put in ids (gpt-oss writes EQ\u2011NO05\u2011RACK3 with non-breaking hyphens), plus
+# zero-width characters. Ids in the graph only ever use "-".
+_DASHES = str.maketrans({c: "-" for c in "\u2010\u2011\u2012\u2013\u2014\u2015\u2212\ufe58\ufe63\uff0d"}
+                        | {c: None for c in "\u200b\u200c\u200d\u2060\ufeff"})
+
+
+def normalize_id(value):
+    """An id as the graph spells it: ASCII hyphens, no zero-width characters, no surrounding spaces."""
+    return value.translate(_DASHES).strip() if isinstance(value, str) else value
 
 
 @dataclass
@@ -164,7 +173,7 @@ def check_args(spec, args):
     """Check tool arguments against the tool's schema, since self-hosted servers do not enforce it.
     Unknown keys are dropped; missing keys, wrong types, values outside an enum, and Finding refs (F3) passed
     where a node id belongs are errors the model can fix. Returns (clean_args, problem)."""
-    clean = {k: v for k, v in args.items() if k in spec.params}
+    clean = {k: normalize_id(v) for k, v in args.items() if k in spec.params}
     for k, prop in spec.params.items():
         if k not in clean:
             if "null" in (prop["type"] if isinstance(prop["type"], list) else [prop["type"]]):
@@ -310,7 +319,7 @@ def validate_answer(ctx, raw):
     kept, dropped = {"claims": [], "actions": []}, []
     for key in ("claims", "actions"):
         for c in raw.get(key) or []:
-            ids = [ctx.inv.resolve(i) for i in c.get("finding_ids") or []]
+            ids = [ctx.inv.resolve(normalize_id(i)) for i in c.get("finding_ids") or []]
             if ids and all(i in findings for i in ids):
                 kept[key].append({"text": c["text"], "finding_ids": ids})
             else:
@@ -331,6 +340,7 @@ def validate_answer(ctx, raw):
     structural = {n for i in used if findings[i]["tool"] != "search_artifacts" for n in findings[i]["cites"]}
 
     def entity(eid, what):
+        eid = normalize_id(eid)
         if not eid:
             return None
         rows = run(ctx.graph, "node_brief", id=eid)
