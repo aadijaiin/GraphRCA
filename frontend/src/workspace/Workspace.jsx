@@ -473,7 +473,18 @@ export default function Workspace({ onBackHome, autoStart }) {
                   <span className={`tag ${m.kind === 'procedural' ? 'tag-violet' : 'tag-olive'}`}>{m.kind}</span>
                   <span className="pulse-detail wrap">{m.content}</span>
                 </li>
-              )) : <li className="pulse-row"><span className="pulse-detail">After an investigation the agent writes an episodic memory of what happened and a procedural one about how to investigate it next time.</span></li>}
+              )) : run.done ? (
+                <li className="pulse-row">
+                  <span className="tag tag-olive">skipped</span>
+                  <span className="pulse-detail wrap">
+                    Nothing remembered: memory is only written when the answer has a root cause the validator accepts.
+                    {(() => {
+                      const why = run.answer?.dropped?.find((d) => d.kind === 'root_cause');
+                      return why ? ` The proposed root cause ${why.id} was removed: ${why.reason}.` : ' No root cause was proposed.';
+                    })()}
+                  </span>
+                </li>
+              ) : <li className="pulse-row"><span className="pulse-detail">After an investigation the agent writes an episodic memory of what happened and a procedural one about how to investigate it next time.</span></li>}
             </ul>
           </section>
           <footer className="app-footer">
