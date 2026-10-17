@@ -291,6 +291,14 @@ The flow, tools, graph writes and events are the same as with the scripted backe
 
 ## 13. Using a self-hosted model (gpt-oss-20b)
 
+**Store the settings once, in `.env`.** Copy `.env.example` to `.env` in the repo root and fill in `LOCAL_MODEL_KEY`. `.env` is gitignored. The API, the CLI and `model_check.py` load it from any working directory, and `docker compose` reads it for the app container. Values already exported in your shell take precedence over `.env`.
+
+```bash
+cp .env.example .env      # then edit .env: LOCAL_MODEL_KEY=nvapi-...
+```
+
+In the UI, the model dropdown in the workspace header then offers **Server · openai/gpt-oss-20b** and **Scripted (no model)**. The list comes from `GET /api/backends`, which reports which backends this server has configured (never the key), and the browser remembers your choice.
+
 Host the model on the big machine and point the app at it. Both servers below expose an OpenAI-compatible API.
 
 **Ollama** on the model host:
