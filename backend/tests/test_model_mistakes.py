@@ -67,3 +67,16 @@ def test_orchestrator_prompt_separates_refs_from_ids(graph):
     investigate(graph, "ALT-001", LocalBackend(base_url="http://x/v1", client=fake), save_run=False)
     task = fake.requests[0]["messages"][1]["content"]
     assert "only for citing" in task and "ALT-001" in task
+
+
+def test_typographic_hyphens_in_ids_are_normalized(graph):
+    """ALT-007 run 2026-10-17: root_cause_id 'EQ‑NO05‑RACK3' (non-breaking hyphens) was dropped as
+    'no such node', so the correct answer wrote no memory."""
+    _, inv = investigate(graph, "ALT-007", ScriptedBackend(), save_run=False)
+    ctx = Ctx(graph, inv, ScriptedBackend(), TOOLS["get_alert"](graph, alert_id="ALT-007")["result"])
+    trace_ref = next(r for r, fid in inv.refs.items() if inv.findings()[fid]["tool"] == "trace_decision")
+    ans, dropped = validate_answer(ctx, {"summary": "", "root_cause_id": "EQ‑NO05‑RACK3", "amplifier_id": None,
+                                         "claims": [{"text": "x", "finding_ids": [trace_ref]}], "actions": []})
+    assert ans["root_cause"]["id"] == "EQ-NO05-RACK3" and not dropped
+    assert check_args(T_EQUIP, {"store_id": "NO–05​", "kind": "rack"}) == (
+        {"store_id": "NO-05", "kind": "rack"}, None)
