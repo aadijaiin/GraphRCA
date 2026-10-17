@@ -1,16 +1,23 @@
+// Node colours per graph label, tuned for the light ink-on-cream workspace canvas.
 export const LABEL_COLORS = {
-  Alert: "#f97316",
-  Store: "#a78bfa",
-  SKU: "#22c55e",
-  Equipment: "#f59e0b",
-  Supplier: "#2dd4bf",
-  Campaign: "#ec4899",
-  Ticket: "#ef4444",
-  Decision: "#facc15",
-  Person: "#60a5fa",
-  Artifact: "#94a3b8",
-  Investigation: "#e2e8f0",
-  Finding: "#e2e8f0",
-  Memory: "#c084fc",
+  Alert: "#c8382d",
+  Store: "#1a1614",
+  SKU: "#7d8a24",
+  Equipment: "#a5672b",
+  Supplier: "#2f8a87",
+  Campaign: "#b84d8a",
+  Ticket: "#d9902a",
+  Decision: "#3e8e5a",
+  Person: "#6e6a63",
+  Artifact: "#b9b5aa",
+  Investigation: "#7f6cc4",
+  Task: "#9a8ccf",
+  Finding: "#9a8ccf",
+  Memory: "#7f6cc4",
 };
 export const NODE_SIZE = { Alert: 6, Store: 6, Decision: 5, Campaign: 5, Equipment: 4, Ticket: 4, Person: 4, SKU: 3, Supplier: 4, Artifact: 2.5 };
+
+// labels shown in the legend, in reading order
+export const LEGEND = ["Alert", "Store", "SKU", "Equipment", "Ticket", "Decision", "Campaign", "Person", "Supplier", "Artifact"];
+
+export const TRACE = "#e8622b"; // touched edges, particles and the agent hub

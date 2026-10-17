@@ -236,17 +236,17 @@ Expected:
   ➜  Local:   http://localhost:5173/
 ```
 
-Open http://localhost:5173. The dev server proxies `/api` to port 8000, so step 8 must be running.
+Open http://localhost:5173 for the landing page, or http://localhost:5173/app for the workbench ("Launch demo" goes there too). The dev server proxies `/api` to port 8000, so step 8 must be running.
 
-What you should see:
+What you should see on `/app`:
 
-1. Ten alerts on the left, newest first (ALT-001 at SD-04 on top).
+1. Alert cards, newest first (ALT-001 at SD-04 first; **View all 10** shows the rest), and the top bar says **FalkorDB live**.
 2. The full graph on the canvas, coloured by label.
-3. Click the ALT-001 alert. The header shows **LIVE** and `backend: scripted` (or the Claude model). The timeline shows the memory check, each round's department tasks, and each tool call tagged with the agent that made it. The touched path lights up with dashed lines to the AGENT hub, the answer appears, and "Remembered for next time" lists the memories written.
-4. Click **n sources** on a claim to open the source drawer with message text, author and time.
-5. Click **replay** next to ALT-001 to play the recorded run; the header shows **REPLAY**.
+3. Click **Investigate** on ALT-001 (pick **Scripted** in the top-bar model picker if no Claude key is set). The header shows **LIVE** and the backend (`scripted` or the Claude model). The timeline shows the memory check, each round's department tasks, and each tool call tagged with the agent that made it. The touched path lights up with dashed lines to the AGENT hub, the answer appears, and "Remembered for next time" lists the memories written.
+4. Click **n sources** on a claim to open the source drawer with message text, author and time. Hover a tool step in the timeline to see the nodes and edges it touched.
+5. Click **Replay** on ALT-001 to play the recorded run; the header shows **REPLAY**.
 
-Deep link for demos: http://localhost:5173/?alert=ALT-001 (or `&mode=replay`).
+The landing page is at `/`; the investigation workbench is at http://localhost:5173/app. Deep link for demos: http://localhost:5173/?alert=ALT-001 (or `&mode=replay`).
 
 ## 10. Full stack in Docker (alternative to steps 3 to 9)
 
