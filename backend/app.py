@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 
 from db import get_client
 from ingestor import ingest
-from llm import BACKENDS, default_backend
+from llm import BACKENDS, default_backend, has_credentials
 from orchestrator import investigate
 from tools import get_artifacts, run
 
@@ -36,6 +36,18 @@ def tenant_graph(tenant: str) -> str:
 def health():
     graphs = get_client().list_graphs()  # fails loudly if FalkorDB is down: there is no other store
     return {"ok": True, "graphs": [g for g in graphs if g in TENANTS]}
+
+
+@app.get("/api/backends")
+def backends():
+    """Model backends the UI can offer, from this server's configuration. Never returns keys."""
+    local = os.getenv("LOCAL_MODEL_URL")
+    out = [{"id": "scripted", "label": "Scripted (no model)", "available": True},
+           {"id": "local", "label": f"Server · {os.getenv('LOCAL_MODEL', 'gpt-oss:20b')}", "available": bool(local),
+            "hint": None if local else "set LOCAL_MODEL_URL, LOCAL_MODEL_KEY and LOCAL_MODEL in .env"}]
+    if has_credentials():  # only offered when this server actually has Anthropic credentials
+        out.append({"id": "claude", "label": f"Claude · {os.getenv('BRAIN_MODEL', 'claude-opus-5-5')}", "available": True})
+    return out
 
 
 @app.get("/api/graph")
