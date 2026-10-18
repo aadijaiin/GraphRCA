@@ -77,7 +77,7 @@ export const WORKFLOW_SCENARIOS = {
         badge: 'CAUSALITY DISCOVERY',
         tool: 'falkordb.cypher_traverse(depth=3, directed=false)',
         duration: '4.8ms',
-        summary: 'BlinkBrain traverses outward from NCR Freezer Sync across microservice and organizational boundaries, discovering a direct dependency on an active marketing campaign.',
+        summary: 'GraphRCA traverses outward from NCR Freezer Sync across microservice and organizational boundaries, discovering a direct dependency on an active marketing campaign.',
         thought: 'Executing shortestPath query in FalkorDB. Discovered path connects infrastructure outage through campaign documentation DOC-02 directly to Marketing lead Meera Nair.',
         activeNodes: ['sys-inv', 'doc-02', 'user-meera', 'team-mkt'],
         activeEdges: [['doc-02', 'sys-inv'], ['team-mkt', 'doc-02'], ['user-meera', 'team-mkt']],
@@ -132,7 +132,7 @@ export const WORKFLOW_SCENARIOS = {
         badge: 'IMPACT ASSESSMENT',
         tool: 'impact.simulate_blast_radius(campaign="amul-flash", dark_store="delhi-04")',
         duration: '2.4ms',
-        summary: 'BlinkBrain projects the operational blast radius: 12,400 customers queued to receive push notifications for unavailable inventory, risking an 84% cancellation rate.',
+        summary: 'GraphRCA projects the operational blast radius: 12,400 customers queued to receive push notifications for unavailable inventory, risking an 84% cancellation rate.',
         thought: 'Computing customer impact matrix. 12,400 push notifications scheduled in 12 minutes. Projected delivery SLA failures: 84%. Ad spend at risk: ₹2,40,000.',
         activeNodes: ['doc-02', 'user-meera', 'sys-inv'],
         activeEdges: [['doc-02', 'sys-inv'], ['team-mkt', 'doc-02']],
@@ -217,7 +217,7 @@ export const WORKFLOW_SCENARIOS = {
         badge: 'DEPENDENCY CRAWL',
         tool: 'falkordb.scan_downstream_docs(system="sys-surge")',
         duration: '3.6ms',
-        summary: 'BlinkBrain traverses downstream edges connected to Surge Pricing Engine, identifying runbooks and sales SLAs that cite the superseded ₹30 threshold.',
+        summary: 'GraphRCA traverses downstream edges connected to Surge Pricing Engine, identifying runbooks and sales SLAs that cite the superseded ₹30 threshold.',
         thought: 'Scanning all Doc nodes connected to sys-surge via DOCUMENTS and REFERENCES relationships. Detecting stale parameters.',
         activeNodes: ['sys-surge', 'mem-01', 'doc-01', 'doc-03'],
         activeEdges: [['mem-01', 'sys-surge'], ['doc-01', 'sys-surge'], ['doc-03', 'sys-surge']],
@@ -356,7 +356,7 @@ export const WORKFLOW_SCENARIOS = {
         badge: 'GRAPH RESOLUTION SEARCH',
         tool: 'falkordb.search_historical_resolvers(service="sys-checkout")',
         duration: '5.2ms',
-        summary: 'Instead of guessing from job titles, BlinkBrain traverses past resolved tickets on sys-checkout to discover who actually solved similar race conditions.',
+        summary: 'Instead of guessing from job titles, GraphRCA traverses past resolved tickets on sys-checkout to discover who actually solved similar race conditions.',
         thought: 'Traversing (sys-checkout)<-[:MODIFIES]-(t:Ticket)<-[:RESOLVED]-(eng:Person). Discovered previous tickets LIN-202 and LIN-205.',
         activeNodes: ['sys-checkout', 'LIN-202', 'LIN-205', 'user-rohan'],
         activeEdges: [['LIN-202', 'sys-checkout'], ['LIN-205', 'sys-checkout'], ['user-rohan', 'LIN-202'], ['user-rohan', 'LIN-205']],
@@ -702,7 +702,7 @@ export default function AgentWorkflowShowcase({ onLaunchDemo }) {
         </div>
         <h2 className="section-title">Watch an operational incident resolve in real time.</h2>
         <p className="section-subtitle">
-          How BlinkBrain’s autonomous agents ingest an anomaly, traverse the company graph,
+          How GraphRCA’s autonomous agents ingest an anomaly, traverse the company graph,
           enforce RBAC boundaries, and prove the decision—all in milliseconds.
         </p>
 

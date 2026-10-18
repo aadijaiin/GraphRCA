@@ -23,7 +23,7 @@ from tools import get_artifacts, run
 TENANTS = set(os.getenv("TENANTS", "dashmart,freshloop").split(","))
 DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
-app = FastAPI(title="DashMart Brain")
+app = FastAPI(title="GraphRCA")
 
 
 @app.exception_handler(GraphConnectionError)

@@ -4,13 +4,13 @@ import Section from './ui/Section.jsx';
 import SectionIndex from './ui/SectionIndex.jsx';
 
 /**
- * 6 Original Verified FAQ Items for BlinkBrain
+ * 6 Original Verified FAQ Items for GraphRCA
  * Distinguishes implemented graph capabilities from simulated clusters and planned integrations.
  */
 const FAQ_ITEMS = [
   {
     id: 'faq-1',
-    question: 'What does BlinkBrain actually do?',
+    question: 'What does GraphRCA actually do?',
     answer: 'It links your company’s tickets, docs, people, systems and decisions into one graph, then lets an agent answer questions by following those links. You get an answer plus the exact path it took, so you can check it yourself.',
   },
   {

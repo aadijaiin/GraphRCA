@@ -1,4 +1,4 @@
-# Runbook: running DashMart Brain locally
+# Runbook: running GraphRCA locally
 
 Step-by-step setup from a clean clone, with the output you should expect at each step. If your output differs, check [Troubleshooting](#troubleshooting).
 
@@ -275,7 +275,7 @@ Open http://localhost:8000; the API serves the built UI. The container uses the 
 The same graph tools are available to any MCP client over stdio:
 
 ```bash
-claude mcp add dashmart-brain -- /absolute/path/to/GraphRCA/.venv/bin/python /absolute/path/to/GraphRCA/backend/mcp_server.py
+claude mcp add graphrca -- /absolute/path/to/GraphRCA/.venv/bin/python /absolute/path/to/GraphRCA/backend/mcp_server.py
 ```
 
 Tools: `list_alerts`, `get_alert`, `trace_decision`, `find_amplifiers`, `equipment_status`, `find_expert`, `impact_of`, `connect_path`, `rank_people`, `search_artifacts`, `investigate`, `ingest_event`. Each takes a `tenant` (default `dashmart`). FalkorDB must be running.

@@ -1,6 +1,6 @@
 import React from 'react';
 import CornerTicks from './ui/CornerTicks.jsx';
-import { BlinkBrainSymbol } from './Navbar.jsx';
+import { GraphRCASymbol } from './Navbar.jsx';
 
 /**
  * Footer
@@ -58,7 +58,7 @@ export default function Footer({ onLaunchDemo }) {
             <span className="bb-footer-tagline">
               The explainable company brain for quick-commerce production. FalkorDB · Cypher · React.
             </span>
-            <BlinkBrainSymbol size={44} />
+            <GraphRCASymbol size={44} />
           </div>
         </div>
       </div>

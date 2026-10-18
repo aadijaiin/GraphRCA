@@ -232,7 +232,7 @@ function TemporalDriftSvg() {
 }
 
 /**
- * 3 Original BlinkBrain Research Articles
+ * 3 Original GraphRCA Research Articles
  */
 const RESEARCH_ARTICLES = [
   {
@@ -242,7 +242,7 @@ const RESEARCH_ARTICLES = [
     readTime: '6 MIN READ',
     title: 'Why we used a graph, not just embeddings',
     summary: 'Similar-sounding text doesn’t tell you what caused what. Following real links between systems does, and FalkorDB makes that one query.',
-    author: 'BlinkBrain team',
+    author: 'GraphRCA team',
     illustration: <DagTraversalSvg />,
   },
   {
@@ -252,7 +252,7 @@ const RESEARCH_ARTICLES = [
     readTime: '8 MIN READ',
     title: 'Showing the path behind every answer',
     summary: 'How each answer carries the hops and Cypher query that produced it, so anyone can check the agent’s work.',
-    author: 'BlinkBrain team',
+    author: 'GraphRCA team',
     illustration: <ProvenanceEnvelopeSvg />,
   },
   {
@@ -262,7 +262,7 @@ const RESEARCH_ARTICLES = [
     readTime: '5 MIN READ',
     title: 'Catching docs that quietly went stale',
     summary: 'A SUPERSEDES edge between old and new decisions lets the graph spot every runbook still quoting the old rule.',
-    author: 'BlinkBrain team',
+    author: 'GraphRCA team',
     illustration: <TemporalDriftSvg />,
   },
 ];

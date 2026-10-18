@@ -1,4 +1,4 @@
-# CLAUDE.md — BlinkBrain / BlinkCart Company Brain Context & Guide
+# CLAUDE.md — GraphRCA Context & Guide
 
 This file provides comprehensive context for Claude and AI assistants working on this codebase. It documents the product concept, technical architecture, component structure, design system, data contracts, and implementation details.
 
@@ -6,14 +6,14 @@ This file provides comprehensive context for Claude and AI assistants working on
 
 ## 1. Project Overview
 
-**BlinkBrain** (historically referenced as *BlinkCart Company Brain*) is a graph-powered, AI-native "Company Brain" built for high-velocity quick-commerce operations (10-minute delivery networks like Blinkit, Zepto, or Instacart).
+**GraphRCA** is a graph-powered, AI-native "Company Brain" built for high-velocity quick-commerce operations (10-minute delivery networks like Blinkit, Zepto, or Instacart).
 
 In quick-commerce, operational velocity creates a severe **Representational Gap**:
 - Critical knowledge is fragmented across microservices, Jira tickets, Postgres replicas, promotional marketing calendars, outdated Notion runbooks, and on-call tribal memory.
 - When an incident occurs (e.g., a dark-store cold storage failure), standard monitoring dashboards only show symptoms (spikes in order cancellations, rider idle time) without showing cross-department causality.
 - Autonomous AI agents operating without ground truth hallucinate or perform unauthorized actions.
 
-**BlinkBrain solves this** by connecting company entities (microservices, physical dark stores, policy runbooks, team members, tickets, and automated decisions) into a **verifiable, living property graph** powered by **FalkorDB / Cypher**. Every agent action is grounded in mathematical graph traversal, verifiable proof envelopes, and strict RBAC boundaries.
+**GraphRCA solves this** by connecting company entities (microservices, physical dark stores, policy runbooks, team members, tickets, and automated decisions) into a **verifiable, living property graph** powered by **FalkorDB / Cypher**. Every agent action is grounded in mathematical graph traversal, verifiable proof envelopes, and strict RBAC boundaries.
 
 The repository contains two interconnected experiences:
 1. **The Marketing Landing Page (`/`)**: A recreation of the **Antimetal** editorial technology aesthetic with **Beautiful UI** interactive agent workflow visualizations.
@@ -49,7 +49,7 @@ npm run preview
 ## 3. Directory & File Structure
 
 ```
-blinkcart-company-brain/
+graphrca/
 ├── CLAUDE.md                   # This context file for AI assistants
 ├── README.md                   # Project overview and quickstart
 ├── index.html                  # HTML template with Google Fonts (fonts are imported in styles.css: Geist, Geist Mono, Newsreader)
@@ -155,7 +155,7 @@ All colors are centralized in `:root` custom properties:
 The landing page consists of 11 distinct sections assembled in sequential order:
 
 1. **Floating Navbar (`Navbar.jsx`)**:
-   - Sticky, frosted three-part pill navbar (no status strip): Left links capsule (`Architecture`, `Agent Workflow`, `Research`, `FAQ`), Center brand capsule (`BlinkBrainSymbol` + wordmark), Right actions capsule (`Sign In` + `Launch demo`).
+   - Sticky, frosted three-part pill navbar (no status strip): Left links capsule (`Architecture`, `Agent Workflow`, `Research`, `FAQ`), Center brand capsule (`GraphRCASymbol` + wordmark), Right actions capsule (`Sign In` + `Launch demo`).
    - Mobile: Transforms to brand capsule + "Launch demo" button + circular hamburger toggle opening an accessible drawer.
 2. **Editorial Hero (`RadialHeroNetwork.jsx` / `LandingPage.jsx`)**:
    - Left column (48%): Single-line serif headline *"Your company, finally connected."*, serif lead paragraph, primary CTA *"Launch the demo"*, secondary CTA *"Explore the architecture"*.

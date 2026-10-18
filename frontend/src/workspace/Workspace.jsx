@@ -13,7 +13,7 @@ const DEFAULT_MODELS = [
   { id: 'local', label: 'Server · gpt-oss-20b', available: true },
   { id: 'scripted', label: 'Scripted (no model)', available: true },
 ];
-const BACKEND_KEY = 'blinkbrain.backend';
+const BACKEND_KEY = 'graphrca.backend';
 const savedBackend = () => { try { return localStorage.getItem(BACKEND_KEY) || ''; } catch { return ''; } };
 
 const pretty = (agent) => String(agent || '').split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -28,7 +28,7 @@ const formatArgs = (args) =>
     .join(', ');
 
 export function BrandGlyph() {
-  // BlinkBrain mark: a 3×3 dot lattice with one lit node
+  // GraphRCA mark: a 3×3 dot lattice with one lit node
   const dots = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]];
   return <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
     {dots.map(([x, y]) => (
@@ -46,7 +46,7 @@ function AppRail({ onBackHome }) {
   ];
   const go = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   return <nav className="app-rail" aria-label="Workspace navigation">
-    <button type="button" className="rail-brand" onClick={onBackHome} aria-label="Back to BlinkBrain overview" title="Back to overview">
+    <button type="button" className="rail-brand" onClick={onBackHome} aria-label="Back to GraphRCA overview" title="Back to overview">
       <BrandGlyph />
     </button>
     <div className="rail-items">
@@ -64,7 +64,7 @@ function Header({ onBackHome, online, active, model, backend, setBackend, models
     <div className="topbar-crumbs">
       <button type="button" className="topbar-home-pill" onClick={onBackHome}>← Overview</button>
       <span className="crumb-sep">/</span>
-      <span className="crumb">BLINKBRAIN</span>
+      <span className="crumb">GRAPHRCA</span>
       <span className="crumb-sep">·</span>
       <span className="crumb crumb-strong">TENANT · {TENANT.toUpperCase()}</span>
     </div>
@@ -511,7 +511,7 @@ export default function Workspace({ onBackHome, autoStart }) {
             </ul>
           </section>
           <footer className="app-footer">
-            <div><span className="footer-brand-mark"><BrandGlyph /></span><span>BLINKBRAIN</span><span className="footer-copy-divider">·</span><span>SYNTHETIC DATA · DASHMART IS FICTIONAL</span></div>
+            <div><span className="footer-brand-mark"><BrandGlyph /></span><span>GRAPHRCA</span><span className="footer-copy-divider">·</span><span>SYNTHETIC DATA · DASHMART IS FICTIONAL</span></div>
             <div><span>THE AGENT HUB IS A UI ELEMENT, NOT A GRAPH NODE</span><span className="footer-copy-divider">·</span><span className="footer-ready"><i className={online ? '' : 'off'} /> {online ? 'SYSTEM READY' : 'API OFFLINE'}</span></div>
           </footer>
         </main>

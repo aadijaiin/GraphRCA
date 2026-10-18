@@ -1,6 +1,6 @@
-# BlinkBrain — Graph-Powered Company Brain for Quick-Commerce Operations
+# GraphRCA — Graph-Powered Company Brain for Quick-Commerce Operations
 
-BlinkBrain turns distributed operational knowledge into an explainable, living graph. Every decision has a path. Every action has evidence.
+GraphRCA turns distributed operational knowledge into an explainable, living graph. Every decision has a path. Every action has evidence.
 
 This repository contains:
 1. **The Editorial Marketing Landing Page (`/`)**: A high-fidelity recreation of the **Antimetal** editorial technology aesthetic combined with **Beautiful UI** interactive agent workflow animations.
@@ -29,7 +29,7 @@ The application runs locally at `http://localhost:5173`.
 
 ## Navigation & Routes
 
-- **`/`**: The BlinkBrain Marketing Landing Page
+- **`/`**: The GraphRCA Marketing Landing Page
   - **Hero**: Radial knowledge network with Canvas 2D simulation and live leader pills.
   - **The Complexity Gap**: Custom responsive vector diagram of the Representational Gap and editorial essay.
   - **System Architecture**: Layered 4-tier isometric wireframe SVG diagram and editorial narrative.

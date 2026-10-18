@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Menu, X, ArrowUpRight, ShieldCheck, ChevronRight } from 'lucide-react';
 
 /**
- * Original BlinkBrain Brand Glyph Symbol
+ * Original GraphRCA Brand Glyph Symbol
  * A restrained technical graph constellation with an active orange hub.
  */
-export function BlinkBrainSymbol({ size = 18 }) {
+export function GraphRCASymbol({ size = 18 }) {
   return (
     <svg
       width={size}
@@ -92,9 +92,9 @@ export default function Navbar({ onLaunchDemo }) {
 
           {/* Centered Brand Capsule */}
           <div className="bb-nav-capsule bb-nav-capsule--center">
-            <a href="#" className="bb-brand-lockup" aria-label="BlinkBrain Home">
-              <BlinkBrainSymbol size={22} />
-              <span className="bb-brand-wordmark">BlinkBrain</span>
+            <a href="#" className="bb-brand-lockup" aria-label="GraphRCA Home">
+              <GraphRCASymbol size={22} />
+              <span className="bb-brand-wordmark">GraphRCA</span>
             </a>
           </div>
 
@@ -105,7 +105,7 @@ export default function Navbar({ onLaunchDemo }) {
                 type="button"
                 className="bb-nav-secondary-btn"
                 onClick={() => handleDemoClick('rootcause')}
-                aria-label="Sign In to BlinkBrain"
+                aria-label="Sign In to GraphRCA"
               >
                 Sign In
               </button>
@@ -113,7 +113,7 @@ export default function Navbar({ onLaunchDemo }) {
                 type="button"
                 className="bb-nav-cta-btn"
                 onClick={() => handleDemoClick('rootcause')}
-                aria-label="Launch BlinkBrain demo"
+                aria-label="Launch GraphRCA demo"
               >
                 <span>Launch demo</span>
               </button>

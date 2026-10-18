@@ -57,7 +57,7 @@ Alert ──> Orchestrator ── recall_memory ──> similar past incidents +
 - **Memory** is written back into the tenant graph. Recall merges the plans of all similar incidents. Store Ops and Growth always run, so memory can add departments or move them earlier but never narrow the search. Measured: ALT-005 (dairy, chiller) takes 1 dispatch round after ALT-001 instead of 2.
 - **Ingestor** (`backend/ingestor.py`) turns a pasted message into nodes after validating every reference, in one atomic, idempotent write. A message that reads as an alert creates an Alert the orchestrator can investigate.
 - **Tenants**: one FalkorDB graph per company (`dashmart`, `freshloop`). Shared memory lives inside each tenant's graph, because FalkorDB has no cross-graph edges.
-- **MCP** (`backend/mcp_server.py`): the same graph tools, plus `investigate` and `ingest_event`, for any MCP client: `claude mcp add dashmart-brain -- python backend/mcp_server.py`.
+- **MCP** (`backend/mcp_server.py`): the same graph tools, plus `investigate` and `ingest_event`, for any MCP client: `claude mcp add graphrca -- python backend/mcp_server.py`.
 
 ## API
 

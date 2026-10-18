@@ -4,7 +4,7 @@ Oct 16, 2026 · @Aadi Jain
 
 ## 1. Mission and tracks
 
-We are building **DashMart Brain**, an agent that investigates cross-team failures in a fictional 10-minute-delivery company by running its reasoning as Cypher queries in FalkorDB. Submissions close **Sun Oct 18, 11:59 PM IST**. At 2:15 AM IST on Fri Oct 16 that leaves about 69 hours, of which roughly 40 are realistic working hours.
+We are building **GraphRCA**, an agent that investigates cross-team failures in a fictional 10-minute-delivery company by running its reasoning as Cypher queries in FalkorDB. Submissions close **Sun Oct 18, 11:59 PM IST**. At 2:15 AM IST on Fri Oct 16 that leaves about 69 hours, of which roughly 40 are realistic working hours.
 
 **One-line pitch:** when something breaks, the cause usually sits across five teams. The Brain finds the chain, names the owner, shows the evidence, and remembers the fix.
 

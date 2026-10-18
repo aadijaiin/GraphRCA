@@ -26,7 +26,7 @@ const STEPS = [
   {
     kicker: '02 · THE GRAPH',
     title: 'Connect it into one graph.',
-    body: 'BlinkBrain reads tickets, runbooks, chats, code and orders, then links them in FalkorDB: who owns what, what depends on what, and which decision replaced which.',
+    body: 'GraphRCA reads tickets, runbooks, chats, code and orders, then links them in FalkorDB: who owns what, what depends on what, and which decision replaced which.',
   },
   {
     kicker: '03 · THE AGENTS',
@@ -35,7 +35,7 @@ const STEPS = [
   },
 ];
 
-/** Original BlinkBrain mark for the agents tile: a rising dot lattice. */
+/** Original GraphRCA mark for the agents tile: a rising dot lattice. */
 function AgentsMark() {
   const dots = [[4, 0], [3, 1], [5, 1], [2, 2], [4, 2], [6, 2], [1, 3], [3, 3], [5, 3], [0, 4]];
   return (
@@ -74,13 +74,13 @@ export const StackDiagram = React.forwardRef(function StackDiagram(_, ref) {
       ref={ref}
       className="bb-stack-frame"
       role="img"
-      aria-label="BlinkBrain stack: your team, BlinkBrain agents, the company graph in FalkorDB, connected sources, and day-to-day operations"
+      aria-label="GraphRCA stack: your team, GraphRCA agents, the company graph in FalkorDB, connected sources, and day-to-day operations"
     >
       <div className="bb-stack">
         <StackLayer reveal="0,0.1,up" title="Your team" detail="Asks questions and makes the final call." spec="ROLES · APPROVALS" />
         <div className="bb-stack-split">
           <div className="bb-stack-split-main">
-            <StackLayer reveal="0.72,0.82,down" title="BlinkBrain agents" detail="Find causes, route owners, flag stale docs." spec="TRACE · DELEGATE · DRIFT · ACCESS" />
+            <StackLayer reveal="0.72,0.82,down" title="GraphRCA agents" detail="Find causes, route owners, flag stale docs." spec="TRACE · DELEGATE · DRIFT · ACCESS" />
             <StackLayer reveal="0.52,0.62,up" title="Company graph" detail="People, systems, docs and decisions, all connected." spec="FALKORDB · CYPHER" />
           </div>
           <div className="bb-stack-tile bb-stack-tile--mark" data-reveal="0.8,0.92,down">

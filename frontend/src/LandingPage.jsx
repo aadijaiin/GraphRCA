@@ -190,7 +190,7 @@ export default function LandingPage({ onLaunchDemo }) {
             </h1>
 
             <p className="hero-editorial-subtitle bb-hero-subtitle">
-              BlinkBrain links your tickets, docs, people and systems into one graph, so its agent can tell you what broke, why, and who should fix it.
+              GraphRCA links your tickets, docs, people and systems into one graph, so its agent can tell you what broke, why, and who should fix it.
             </p>
 
             <div className="hero-action-row bb-hero-actions">
@@ -254,7 +254,7 @@ export default function LandingPage({ onLaunchDemo }) {
               </div>
               <div className="credit-brand-badge">
                 <Network size={12} />
-                <span>BlinkCart Network</span>
+                <span>DashMart Network</span>
               </div>
             </figcaption>
           </div>
@@ -271,7 +271,7 @@ export default function LandingPage({ onLaunchDemo }) {
       <Divider variant="dashed" />
 
       {/* =========================================================
-          5. BLINKBRAIN ARCHITECTURE SECTION (Prompt 4)
+          5. GRAPHRCA ARCHITECTURE SECTION (Prompt 4)
           ========================================================= */}
       <ArchitectureSection />
 
@@ -283,7 +283,7 @@ export default function LandingPage({ onLaunchDemo }) {
       <Divider variant="dashed" />
 
       {/* =========================================================
-          6. BLINKBRAIN PRODUCT SHOWCASE (Prompt 5)
+          6. GRAPHRCA PRODUCT SHOWCASE (Prompt 5)
           ========================================================= */}
       <ProductPreviewShowcase onLaunchDemo={onLaunchDemo} />
 
