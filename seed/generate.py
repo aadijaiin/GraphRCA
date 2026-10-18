@@ -563,8 +563,23 @@ def main():
     args = ap.parse_args()
     args.graph = args.graph or args.tenant
     if args.if_missing:
+        import os
+        import time
         from db import get_client
-        if args.graph in get_client().list_graphs():
+        from redis.exceptions import ConnectionError as GraphDown
+        where = f"{os.getenv('FALKORDB_HOST', 'localhost')}:{os.getenv('FALKORDB_PORT', '6379')}"
+        for attempt in range(30):  # on container start FalkorDB may still be booting
+            try:
+                graphs = get_client().list_graphs()
+                break
+            except GraphDown:
+                if attempt == 0:
+                    print(f"waiting for FalkorDB at {where} ...", flush=True)
+                time.sleep(2)
+        else:
+            raise SystemExit(f"FalkorDB is not reachable at {where}. Set FALKORDB_HOST/FALKORDB_PORT to your FalkorDB "
+                             f"service (on Railway: FALKORDB_HOST=${{{{<service>.RAILWAY_PRIVATE_DOMAIN}}}}).")
+        if args.graph in graphs:
             print(f"graph '{args.graph}' exists, skipping seed")
             return
     if args.tenant == "freshloop":
