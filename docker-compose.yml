@@ -11,16 +11,12 @@ services:
   app:
     build: .
     profiles: ["app"]   # `docker compose --profile app up` runs the full stack
-    environment:
+    env_file:           # model settings (LOCAL_*, BRAIN_*, keys) from your .env, same as the CLI; never committed
+      - path: .env
+        required: false
+    environment:        # these win over .env: inside compose, FalkorDB is the "falkordb" service
       FALKORDB_HOST: falkordb
       FALKORDB_PORT: 6379
-      # Model backend, passed through from your shell or .env (values are never committed)
-      BRAIN_BACKEND: ${BRAIN_BACKEND:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      LOCAL_MODEL_URL: ${LOCAL_MODEL_URL:-}
-      LOCAL_MODEL: ${LOCAL_MODEL:-gpt-oss:20b}
-      LOCAL_MODEL_KEY: ${LOCAL_MODEL_KEY:-}
-      LOCAL_REASONING_EFFORT: ${LOCAL_REASONING_EFFORT:-}
     ports:
       - "8000:8000"
     depends_on:
