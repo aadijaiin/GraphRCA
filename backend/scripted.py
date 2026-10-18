@@ -6,6 +6,8 @@ the multi-agent flow, graph writes and events can be tested and demoed without a
 """
 import re
 
+from state import METRICS, REL_WORDS, UNITS, when
+
 STORE = re.compile(r"\b[A-Z]{2}-\d{2}\b")
 EQUIP = re.compile(r"\bEQ-[A-Z0-9]+-[A-Z0-9]+\b")
 KINDS = re.compile(r"\b(chiller|freezer|rack|scanner)\b")
@@ -122,21 +124,23 @@ def compose(ctx, dispatches, paths=()):
     status, expert = by_tool.get("equipment_status"), by_tool.get("find_expert")
     claims, actions = [], []
     if alert_f:
-        claims.append({"text": f"{a['store_id']} {a['metric']} rose from {a['before']} to {a['after']}; the alert "
-                               f"attributes it to {a['sku_name']}.", "finding_ids": [alert_f]})
+        claims.append({"text": f"{METRICS.get(a['metric'], a['metric']).capitalize()} at {a['store_name']} rose from "
+                               f"{a['before']} to {a['after']} {UNITS.get(a['metric'], '')} at {when(a['ts'])}; the "
+                               f"alert points to {a['sku_name']} ({a['sku_id']}).", "finding_ids": [alert_f]})
     t = (trace or {}).get("data") or {}
     eq = None
     if t.get("decision"):
         d, au = t["decision"], t["author"]
         claims.append({"text": f"{au['name']} ({au['role']}) moved {a['sku_name']} from {d['moved_from']} to "
-                               f"{d['moved_to']} at {d['decided_at']} ({d['id']}).", "finding_ids": [trace["id"]]})
+                               f"{d['moved_to']} on {when(d['decided_at'])} (decision {d['id']}).",
+                       "finding_ids": [trace["id"]]})
         eq = next((c for c in t["causes"] if c["label"] == "Equipment"), None)
         for c in t["causes"]:
             if c["label"] == "Ticket":
                 ids = [trace["id"]]
                 state = "unassigned" if c["unassigned"] else f"assigned to {c['owner']['name']}"
-                claims.append({"text": f"The move was made because of ticket {c['id']} ({c['name']}), status "
-                                       f"{c['status']}, {state}.", "finding_ids": ids})
+                claims.append({"text": f"The move was made because of ticket {c['id']} \u201c{c['name']}\u201d, which "
+                                       f"is {c['status']} and {state}.", "finding_ids": ids})
     campaigns = ((amps or {}).get("data") or {}).get("campaigns", [])
     for cm in campaigns:
         claims.append({"text": f"Campaign {cm['name']} ({cm['id']}), owned by {cm['owner']['name']}, went live "
@@ -145,9 +149,10 @@ def compose(ctx, dispatches, paths=()):
     for h in paths:
         res = h["output"].get("result") or {}
         if res.get("linked") and h["output"].get("finding"):
-            hops = " -> ".join(f"{e['from']} {e['type']} {e['to']}" for e in res["edges"])
-            claims.append({"text": f"{res['path'][0]['id']} and {res['path'][-1]['id']} are linked in the graph in "
-                                   f"{res['hops']} hops: {hops}.", "finding_ids": [h["output"]["finding"]]})
+            hops = ", and ".join(f"{e['from']} {REL_WORDS.get(e['type'], e['type'].lower())} {e['to']}"
+                                 for e in res["edges"])
+            claims.append({"text": f"{res['path'][0]['id']} and {res['path'][-1]['id']} are connected in the graph "
+                                   f"in {res['hops']} steps: {hops}.", "finding_ids": [h["output"]["finding"]]})
     root = eq["id"] if eq else (campaigns[0]["id"] if campaigns else None)
     amplifier = campaigns[0]["id"] if eq and campaigns else None
     if amplifier:

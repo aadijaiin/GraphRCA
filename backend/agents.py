@@ -144,12 +144,18 @@ T_READ = ToolSpec("read_findings",
                                                                   "orchestrator", None]}},
                   _read_findings)
 
+WRITING = (
+    "Write for a store operations manager, not a programmer: name people, items, stores, equipment and campaigns "
+    "by name with the id in parentheses, e.g. Front chiller A1 (EQ-SD04-CHA1) or Vikram Sethi (PER-001); say "
+    "\"promise time\" rather than promise_time_min; write times like 16 Oct 08:30 UTC; use plain hyphens in ids; "
+    "never put tool names, field names or JSON in your prose.")
+
 DEPT_RULES = (
     "You work for DashMart, a fictional quick-commerce company (all data is synthetic). You investigate by calling "
     "your tools; every tool call is recorded as a Finding that other agents can read. Use only your tools, never "
     "guess ids, and stop as soon as your task is answered: most tasks need 1 to 3 tool calls, and the main tool for "
     "your department usually answers it in one. Finish with a short plain report (2 to 4 sentences) of "
-    "what you found and the Finding ids that support it. If your tools show nothing relevant, say so.")
+    "what you found and the Finding refs that support it. If your tools show nothing relevant, say so. " + WRITING)
 
 DEPARTMENTS = {
     "store_ops": Agent("store_ops", "You are the Store Ops agent: store decisions, product placement and pick "
@@ -413,7 +419,8 @@ ORCHESTRATOR = Agent(
     "- an open ticket with no assignee: assign it to the owner of the equipment it is about (not close it);\n"
     "- an active campaign that amplifies the problem: pause or cap it for that store and tell its owner;\n"
     "- a demand spike with no fault: ask the campaign owner to cap it or raise replenishment.\n"
-    "Cite the Findings that name each owner.",
+    "Cite the Findings that name each owner.\n\n"
+    "Task instructions you send to departments and everything in submit_answer are read by people. " + WRITING,
     [ToolSpec("recall_memory", "Past incidents similar to this alert and the plan learned for the pattern.", {},
               _recall),
      ToolSpec("dispatch", "Give tasks to one or more departments in ONE call; they run in parallel. Returns each "
