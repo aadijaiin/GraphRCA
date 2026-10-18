@@ -205,10 +205,11 @@ The landing page consists of 11 distinct sections assembled in sequential order:
 Rendered for `/app` (or hash `#app`), and for any URL with `?alert=` (e.g. `/?alert=ALT-001&mode=replay`). Light cream product-UI theme:
 
 1. **Icon rail**: brand glyph (returns to `/`) and jump links to alerts, graph, investigation and memory.
-2. **Top bar**: `← Overview`, tenant breadcrumb, LIVE/REPLAY pill, the model that chose the tool calls, API status, and a model-backend picker (server default, scripted, claude, local) passed as `?backend=` to `/api/investigate`.
+2. **Top bar**: `← Overview`, tenant breadcrumb, LIVE/REPLAY pill, the model that chose the tool calls, API status, and a model-backend picker built from `/api/backends` ("Server · <model>" first, then "Scripted (no model)"; Claude only when the server has a key), passed as `?backend=` to `/api/investigate` and remembered in localStorage.
 3. **Main column**: real counts from the graph (nodes, alerts, touched nodes, findings); alert cards from `/api/alerts` with **Investigate** (live SSE) and **Replay** (alerts with a file in `public/runs/`); the company graph from `/api/graph`; memories written by the run.
 4. **Assistant column**: the answer (summary, root cause and amplifier chips, claims with source and finding buttons, recommended actions, validator drops) above the step-by-step timeline (memory recall, dispatched tasks with status, tool calls with node/edge counts, who is thinking). Hovering a tool step highlights the nodes and edges it touched.
 5. **Evidence drawer**: source messages from `/api/artifacts`, or the findings behind a claim, action or node.
+6. **Readable text** (`workspace/readable.jsx`): ids in server and model text render with their graph name (id kept visible), schema words and ISO times become plain words, each tool step reads as a sentence, and "What it asked the graph" shows the real Cypher from `/api/queries` with a plain description and a line-by-line gloss. While a model call is in flight, the thinking row shows elapsed seconds.
 
 Landing-page "launch demo" buttons open `/app?scenario=…`; `rootcause` starts the ALT-001 replay, the others just open the workbench.
 
@@ -224,6 +225,8 @@ The workbench uses only the backend contracts in `../docs`:
 | Alerts | `GET /api/alerts?tenant=dashmart` |
 | Source messages | `GET /api/artifacts?tenant=dashmart&ids=ART-A01,…` |
 | Investigate | `GET /api/investigate/{alert_id}?tenant=dashmart[&backend=scripted]` (SSE, events in `docs/events.md`) |
+| Model backends | `GET /api/backends` → `[{id, label, available, hint?}]` (never returns keys) |
+| Queries | `GET /api/queries` → `{tool: {file, about, cypher}}` |
 
 `src/data/mockCompany.js` is illustrative data for the landing-page animations only; the workbench never reads it.
 
