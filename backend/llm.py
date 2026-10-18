@@ -107,7 +107,9 @@ class LocalBackend:
     LOCAL_MODEL           model name on that server (default gpt-oss:20b)
     LOCAL_MODEL_KEY       API key if the server wants one (default none)
     LOCAL_REASONING_EFFORT  low | medium | high, sent as reasoning_effort (gpt-oss supports it; unset = server default)
-    LOCAL_TEMPERATURE     default 0.2;  LOCAL_MAX_TOKENS  per response, default 4096;  LOCAL_TIMEOUT  seconds, default 300
+    LOCAL_TEMPERATURE     default 0.2;  LOCAL_MAX_TOKENS  per response, default 4096
+    LOCAL_TIMEOUT         seconds per call, default 60;  LOCAL_RETRIES  default 2 (free hosted endpoints sometimes
+                          leave a request hanging; a fresh attempt usually answers in seconds)
     """
 
     def __init__(self, base_url=None, model=None, client=None):
@@ -121,7 +123,8 @@ class LocalBackend:
                 raise AgentError("LOCAL_MODEL_URL is not set (e.g. http://mainframe:11434/v1)")
             from openai import OpenAI, OpenAIError
             client = OpenAI(base_url=self.base_url, api_key=os.getenv("LOCAL_MODEL_KEY") or "not-needed",
-                            timeout=float(os.getenv("LOCAL_TIMEOUT", "300")), max_retries=1)
+                            timeout=float(os.getenv("LOCAL_TIMEOUT", "60")),
+                            max_retries=int(os.getenv("LOCAL_RETRIES", "2")))
             try:  # fail fast if the server is down, instead of mid-investigation
                 client.with_options(timeout=5).models.list()
             except OpenAIError as e:
