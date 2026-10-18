@@ -59,6 +59,26 @@ def backends():
     return out
 
 
+QUERY_FILES = {"get_alert": "alert_context"}  # tool -> queries/<file>.cypher when the names differ
+QUERIES_DIR = Path(__file__).resolve().parent.parent / "queries"
+
+
+@app.get("/api/queries")
+def queries():
+    """The real Cypher behind each tool, with the plain-language explanation from the file's header comment,
+    so the UI can show what each step asked the graph."""
+    out = {}
+    for f in sorted(QUERIES_DIR.glob("*.cypher")):
+        if f.stem.startswith(("w_", "ui_", "00_")):
+            continue
+        lines = f.read_text().splitlines()
+        about = " ".join(l.lstrip("/ ").strip() for l in lines if l.strip().startswith("//"))
+        cypher = "\n".join(l for l in lines if not l.strip().startswith("//")).strip()
+        tool = next((t for t, q in QUERY_FILES.items() if q == f.stem), f.stem)
+        out[tool] = {"file": f"queries/{f.name}", "about": about.split(": ", 1)[-1], "cypher": cypher}
+    return out
+
+
 @app.get("/api/graph")
 def graph(tenant: str = "dashmart"):
     g = tenant_graph(tenant)
