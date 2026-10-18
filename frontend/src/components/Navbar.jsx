@@ -58,7 +58,6 @@ export default function Navbar({ onLaunchDemo }) {
 
   const navLinks = [
     { label: 'Architecture', href: '#architecture' },
-    { label: 'Agent Workflow', href: '#agent-workflow' },
     { label: 'Research', href: '#research' },
     { label: 'FAQ', href: '#faq' },
   ];
@@ -101,14 +100,6 @@ export default function Navbar({ onLaunchDemo }) {
           {/* Right Group: Actions Capsule + Mobile Menu Toggle */}
           <div className="bb-nav-right-group">
             <div className="bb-nav-capsule bb-nav-capsule--right">
-              <button
-                type="button"
-                className="bb-nav-secondary-btn"
-                onClick={() => handleDemoClick('rootcause')}
-                aria-label="Sign In to GraphRCA"
-              >
-                Sign In
-              </button>
               <button
                 type="button"
                 className="bb-nav-cta-btn"
@@ -157,13 +148,6 @@ export default function Navbar({ onLaunchDemo }) {
             </ul>
 
             <div className="bb-mobile-actions">
-              <button
-                type="button"
-                className="bb-mobile-secondary-btn"
-                onClick={() => handleDemoClick('rootcause')}
-              >
-                Sign In
-              </button>
               <button
                 type="button"
                 className="bb-mobile-cta-btn"

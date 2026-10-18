@@ -8,7 +8,6 @@ import {
   Layers, Cpu, Server, Activity, ArrowDown, Play
 } from 'lucide-react';
 import { nodes as mockNodes, links as mockLinks, scenarios } from './data/mockCompany.js';
-import AgentWorkflowShowcase from './components/AgentWorkflowShowcase.jsx';
 import RadialHeroNetwork from './components/RadialHeroNetwork.jsx';
 import ComplexitySection, { TechnicalComplexitySvg } from './components/ComplexitySection.jsx';
 import ArchitectureSection from './components/ArchitectureSection.jsx';

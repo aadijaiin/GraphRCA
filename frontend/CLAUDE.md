@@ -155,7 +155,7 @@ All colors are centralized in `:root` custom properties:
 The landing page consists of 11 distinct sections assembled in sequential order:
 
 1. **Floating Navbar (`Navbar.jsx`)**:
-   - Sticky, frosted three-part pill navbar (no status strip): Left links capsule (`Architecture`, `Agent Workflow`, `Research`, `FAQ`), Center brand capsule (`GraphRCASymbol` + wordmark), Right actions capsule (`Sign In` + `Launch demo`).
+   - Sticky, frosted three-part pill navbar (no status strip): Left links capsule (`Architecture`, `Research`, `FAQ`), Center brand capsule (`GraphRCASymbol` + wordmark), Right actions capsule (`Launch demo`).
    - Mobile: Transforms to brand capsule + "Launch demo" button + circular hamburger toggle opening an accessible drawer.
 2. **Editorial Hero (`RadialHeroNetwork.jsx` / `LandingPage.jsx`)**:
    - Left column (48%): Single-line serif headline *"Your company, finally connected."*, serif lead paragraph, primary CTA *"Launch the demo"*, secondary CTA *"Explore the architecture"*.

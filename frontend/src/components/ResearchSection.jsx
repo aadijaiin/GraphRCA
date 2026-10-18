@@ -329,7 +329,6 @@ export default function ResearchSection() {
                 {/* Author / Source Footer */}
                 <div className="bb-card-footer">
                   <span className="bb-card-author">{article.author}</span>
-                  <span className="bb-card-read-cue">Read Paper →</span>
                 </div>
               </div>
             </article>
