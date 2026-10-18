@@ -1,7 +1,8 @@
-import React from 'react';
-import Container from './ui/Container.jsx';
-import Section from './ui/Section.jsx';
-import CornerTicks from './ui/CornerTicks.jsx';
+import React from "react";
+import Container from "./ui/Container.jsx";
+import Section from "./ui/Section.jsx";
+import CornerTicks from "./ui/CornerTicks.jsx";
+import SectionIndex from "./ui/SectionIndex.jsx";
 
 /**
  * TechnicalComplexitySvg
@@ -66,11 +67,47 @@ export function TechnicalComplexitySvg() {
 
         {/* Subtle Horizontal Dotted Construction Lines */}
         <g className="bb-chart-construction-lines" opacity="0.6">
-          <line x1="90" y1="110" x2="635" y2="110" stroke="#171513" strokeWidth="1" strokeDasharray="2 5" strokeOpacity="0.12" />
-          <line x1="90" y1="210" x2="635" y2="210" stroke="#171513" strokeWidth="1" strokeDasharray="2 5" strokeOpacity="0.12" />
-          <line x1="90" y1="310" x2="635" y2="310" stroke="#171513" strokeWidth="1" strokeDasharray="2 5" strokeOpacity="0.12" />
+          <line
+            x1="90"
+            y1="110"
+            x2="635"
+            y2="110"
+            stroke="#171513"
+            strokeWidth="1"
+            strokeDasharray="2 5"
+            strokeOpacity="0.12"
+          />
+          <line
+            x1="90"
+            y1="210"
+            x2="635"
+            y2="210"
+            stroke="#171513"
+            strokeWidth="1"
+            strokeDasharray="2 5"
+            strokeOpacity="0.12"
+          />
+          <line
+            x1="90"
+            y1="310"
+            x2="635"
+            y2="310"
+            stroke="#171513"
+            strokeWidth="1"
+            strokeDasharray="2 5"
+            strokeOpacity="0.12"
+          />
           {/* Vertical dashed evaluation line where the gap is measured */}
-          <line x1="550" y1="55" x2="550" y2="420" stroke="#171513" strokeWidth="1" strokeDasharray="3 4" strokeOpacity="0.16" />
+          <line
+            x1="550"
+            y1="55"
+            x2="550"
+            y2="420"
+            stroke="#171513"
+            strokeWidth="1"
+            strokeDasharray="3 4"
+            strokeOpacity="0.16"
+          />
         </g>
 
         {/* Shaded Area of the Representational Gap */}
@@ -81,9 +118,25 @@ export function TechnicalComplexitySvg() {
 
         {/* Axes Lines */}
         {/* Y-Axis: Complexity */}
-        <line x1="90" y1="40" x2="90" y2="420" stroke="#171513" strokeWidth="1.4" strokeOpacity="0.4" />
+        <line
+          x1="90"
+          y1="40"
+          x2="90"
+          y2="420"
+          stroke="#171513"
+          strokeWidth="1.4"
+          strokeOpacity="0.4"
+        />
         {/* X-Axis: Time */}
-        <line x1="90" y1="420" x2="655" y2="420" stroke="#171513" strokeWidth="1.4" strokeOpacity="0.4" />
+        <line
+          x1="90"
+          y1="420"
+          x2="655"
+          y2="420"
+          stroke="#171513"
+          strokeWidth="1.4"
+          strokeOpacity="0.4"
+        />
 
         {/* Ticks along Y-Axis (Complexity) */}
         <g className="bb-chart-ticks-y" stroke="#171513" strokeOpacity="0.35">
@@ -176,7 +229,16 @@ export function TechnicalComplexitySvg() {
         {/* Top Pale Annotation Box: UNDERSTANDING NEEDED TO MANAGE PRODUCTION */}
         <g className="bb-chart-annotation bb-chart-annotation--top">
           {/* Fine leader tick connecting to upper curve */}
-          <line x1="310" y1="84" x2="330" y2="128" stroke="#F26B32" strokeWidth="1" strokeDasharray="2 3" opacity="0.6" />
+          <line
+            x1="310"
+            y1="84"
+            x2="330"
+            y2="128"
+            stroke="#F26B32"
+            strokeWidth="1"
+            strokeDasharray="2 3"
+            opacity="0.6"
+          />
           <rect
             x="150"
             y="60"
@@ -204,7 +266,16 @@ export function TechnicalComplexitySvg() {
         {/* Bottom Pale Annotation Box: WHAT YOUR TEAM CAN HOLD IN THEIR HEADS */}
         <g className="bb-chart-annotation bb-chart-annotation--bottom">
           {/* Fine leader tick connecting to lower curve */}
-          <line x1="300" y1="384" x2="320" y2="350" stroke="#A99B16" strokeWidth="1" strokeDasharray="2 3" opacity="0.6" />
+          <line
+            x1="300"
+            y1="384"
+            x2="320"
+            y2="350"
+            stroke="#A99B16"
+            strokeWidth="1"
+            strokeDasharray="2 3"
+            opacity="0.6"
+          />
           <rect
             x="170"
             y="384"
@@ -275,8 +346,19 @@ export function TechnicalComplexitySvg() {
  */
 export default function ComplexitySection() {
   return (
-    <Section className="bb-complexity-section" id="complexity" spacing="default">
+    <Section
+      className="bb-complexity-section"
+      id="complexity"
+      spacing="default"
+    >
       <Container className="bb-complexity-container">
+        <div className="bb-arch-header-row">
+          <SectionIndex number="01" label="THE GAP" />
+          <span className="bb-arch-header-sub">
+            WHY DASHBOARDS AREN'T ENOUGH
+          </span>
+        </div>
+
         <div className="bb-complexity-grid">
           {/* Left Column: Responsive Custom Technical Complexity Chart */}
           <div className="bb-complexity-diagram-col">
@@ -291,50 +373,32 @@ export default function ComplexitySection() {
                 <span className="bb-drop-cap-char">A</span>
                 <CornerTicks size={8} strokeColor="rgba(23, 21, 19, 0.35)" />
               </span>
-              10-minute delivery company runs on dozens of separate systems: inventory, freezers,
-              pricing, riders, campaigns. They all change at once, and none of them talk to each other.
+              10-minute delivery company runs on dozens of separate systems:
+              inventory, freezers, pricing, riders, campaigns. They all change
+              at once, and none of them talk to each other.
             </p>
 
             <p className="bb-complexity-body">
-              The knowledge that ties them together is scattered across tickets, old runbooks and
-              whoever happens to be on call. Nobody can hold the whole picture in their head.
+              The knowledge that ties them together is scattered across tickets,
+              old runbooks and whoever happens to be on call. Nobody can hold
+              the whole picture in their head.
             </p>
 
             <p className="bb-complexity-body">
-              So when something breaks, dashboards show <em>that</em> orders are failing, not
-              <em> why</em>. Was it a price change, a freezer, a stale doc? Teams spend the incident
-              guessing.
+              So when something breaks, dashboards show <em>that</em> orders are
+              failing, not
+              <em> why</em>. Was it a price change, a freezer, a stale doc?
+              Teams spend the incident guessing.
             </p>
 
             <p className="bb-complexity-body">
-              Axon closes that gap with one connected graph of the company, and an agent that
-              can follow it.
+              Axon closes that gap with one connected graph of the company, and
+              an agent that can follow it.
             </p>
 
             <p className="bb-complexity-cadence">
               It connects. It traces. It explains.
             </p>
-          </div>
-        </div>
-
-        {/* Small Section Index & Technical Label Strip (Research-Report Style) */}
-        <div className="bb-complexity-report-strip">
-          <div className="bb-report-strip-left">
-            <span className="bb-report-index-num">[ 01 ]</span>
-            <span className="bb-report-index-sep" aria-hidden="true">/</span>
-            <span className="bb-report-index-title">FIG. 1.0 · THE GAP</span>
-          </div>
-
-          <div className="bb-report-strip-center">
-            <span className="bb-report-index-desc">
-              HOW COMPLEX THE OPERATION IS VS. WHAT ONE PERSON CAN TRACK
-            </span>
-          </div>
-
-          <div className="bb-report-strip-right">
-            <span className="bb-report-index-meta">
-              WHY DASHBOARDS AREN’T ENOUGH
-            </span>
           </div>
         </div>
       </Container>
