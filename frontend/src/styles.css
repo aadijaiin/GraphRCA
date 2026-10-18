@@ -30,7 +30,7 @@
   --am-violet: #7f6cc4;
   --am-green: #3e8e5a;
 
-  /* GraphRCA Editorial Technology Design Tokens */
+  /* Axon Editorial Technology Design Tokens */
   --bb-bg: #D7D7D0;
   --bb-text-primary: #1A1614;
   --bb-text-secondary: #6E6D68;
@@ -938,7 +938,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focu
 
 
 /* =========================================================
-   10. GRAPHRCA EDITORIAL VISUAL SYSTEM & FOUNDATION
+   10. AXON EDITORIAL VISUAL SYSTEM & FOUNDATION
    ========================================================= */
 
 .antimetal-page,
@@ -2456,7 +2456,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focu
 }
 
 /* =========================================================
-   6. GRAPHRCA PRODUCT SHOWCASE (Prompt 5 Specification)
+   6. AXON PRODUCT SHOWCASE (Prompt 5 Specification)
    ========================================================= */
 
 .bb-product-showcase-section,

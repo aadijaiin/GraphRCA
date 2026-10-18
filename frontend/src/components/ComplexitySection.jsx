@@ -263,7 +263,7 @@ export function TechnicalComplexitySvg() {
  * ComplexitySection
  * Full implementation of Prompt 3:
  * - Spacious two-column layout (Technical SVG diagram + large editorial serif copy)
- * - Original GraphRCA editorial text covering:
+ * - Original Axon editorial text covering:
  *   1. Quick-commerce represented across many disconnected systems
  *   2. Knowledge fragmentation across tickets, inventory, pricing, campaigns, docs, people
  *   3. Dashboards showing symptoms rather than cross-department causes
@@ -307,7 +307,7 @@ export default function ComplexitySection() {
             </p>
 
             <p className="bb-complexity-body">
-              GraphRCA closes that gap with one connected graph of the company, and an agent that
+              Axon closes that gap with one connected graph of the company, and an agent that
               can follow it.
             </p>
 

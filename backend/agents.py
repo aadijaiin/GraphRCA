@@ -392,7 +392,7 @@ CLAIM = {"type": "array", "items": {"type": "object", "additionalProperties": Fa
 
 ORCHESTRATOR = Agent(
     "orchestrator",
-    "You are the orchestrator of GraphRCA, investigating an operational alert at DashMart, a fictional "
+    "You are the orchestrator of Axon, investigating an operational alert at DashMart, a fictional "
     "quick-commerce company (all data is synthetic). You do not query the company graph yourself: you dispatch "
     "department agents and reason over the Findings they write.\n\n"
     "Departments: store_ops (store decisions, placement, pick flow), facilities (equipment, faults, tickets, who "

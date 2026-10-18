@@ -38,7 +38,7 @@ const SIMULATED_ANSWERS = {
     details: "1. 'Dark Store Emergency Escalation' runbook lists retired Slack channel #delhi-ops-urgent. 2. Cold storage SOP v1.9 specifies a 15-minute sensor grace period, whereas firmware v3.2 enforces an immediate 5-minute quarantine.",
     owner: "Infrastructure Guild & Dark Store Leads",
     evidence: "Synthesized from Notion API sync vs. active K8s service configs",
-    status: "GraphRCA Agent can open pull requests to sync documentation"
+    status: "Axon Agent can open pull requests to sync documentation"
   }
 };
 
@@ -163,7 +163,7 @@ export default function ProductPreviewShowcase({ onLaunchDemo }) {
             {/* Center: Title */}
             <div className="bb-browser-title-center">
               <span className="bb-browser-app-icon" />
-              <span className="bb-browser-title-text">GRAPHRCA · COMPANY BRAIN</span>
+              <span className="bb-browser-title-text">AXON · COMPANY BRAIN</span>
             </div>
 
             {/* Right: Operational Status Pill */}
@@ -180,7 +180,7 @@ export default function ProductPreviewShowcase({ onLaunchDemo }) {
                 ========================================================= */}
             <aside className="bb-sidebar-region">
               {/* Top Brand Dot/Network Mark */}
-              <div className="bb-sidebar-brand-mark" title="GraphRCA Substrate">
+              <div className="bb-sidebar-brand-mark" title="Axon Substrate">
                 <div className="bb-mark-triangle">
                   <span className="bb-mark-dot bb-mark-dot--1" />
                   <span className="bb-mark-dot bb-mark-dot--2" />
@@ -447,7 +447,7 @@ export default function ProductPreviewShowcase({ onLaunchDemo }) {
                 </div>
                 <h2 className="bb-assistant-headline">Ask anything about your company</h2>
                 <p className="bb-assistant-copy">
-                  GraphRCA correlates microservices, policy runbooks, inventory telemetry,
+                  Axon correlates microservices, policy runbooks, inventory telemetry,
                   and team ownership to deliver verifiable answers with proof.
                 </p>
               </div>
@@ -482,7 +482,7 @@ export default function ProductPreviewShowcase({ onLaunchDemo }) {
                     type="text"
                     value={queryText}
                     onChange={(e) => setQueryText(e.target.value)}
-                    placeholder="Ask GraphRCA graph..."
+                    placeholder="Ask Axon graph..."
                     className="bb-query-input"
                   />
                 </div>

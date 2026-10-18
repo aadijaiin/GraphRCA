@@ -1,6 +1,6 @@
 import React from 'react';
 import CornerTicks from './ui/CornerTicks.jsx';
-import { GraphRCASymbol } from './Navbar.jsx';
+import { AxonSymbol } from './Navbar.jsx';
 
 /**
  * Footer
@@ -58,7 +58,7 @@ export default function Footer({ onLaunchDemo }) {
             <span className="bb-footer-tagline">
               The explainable company brain for quick-commerce production. FalkorDB · Cypher · React.
             </span>
-            <GraphRCASymbol size={44} />
+            <AxonSymbol size={44} />
           </div>
         </div>
       </div>

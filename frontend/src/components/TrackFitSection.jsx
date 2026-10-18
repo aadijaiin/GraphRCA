@@ -6,7 +6,7 @@ import CornerTicks from './ui/CornerTicks.jsx';
 
 /**
  * TrackFitSection
- * Maps each Graph Hacks · Track 03 (Company Brain) focus area to what GraphRCA
+ * Maps each Graph Hacks · Track 03 (Company Brain) focus area to what Axon
  * does, in plain words, with the underlying graph pattern for technical readers
  * and a button that opens the matching live scenario in /app.
  */
@@ -65,7 +65,7 @@ export default function TrackFitSection({ onLaunchDemo }) {
             </h2>
             <p className="bb-track-lede">
               The track asks for an agent that understands how a company works. Here is each part
-              of the brief, what GraphRCA does about it, and a live demo you can open.
+              of the brief, what Axon does about it, and a live demo you can open.
             </p>
             <p className="bb-track-note">
               Powered by FalkorDB. Each dark code line is the shape of the Cypher query the agent runs.

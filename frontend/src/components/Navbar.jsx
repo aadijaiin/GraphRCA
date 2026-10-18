@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Menu, X, ArrowUpRight, ShieldCheck, ChevronRight } from 'lucide-react';
 
 /**
- * Original GraphRCA Brand Glyph Symbol
+ * Original Axon Brand Glyph Symbol
  * A restrained technical graph constellation with an active orange hub.
  */
-export function GraphRCASymbol({ size = 18 }) {
+export function AxonSymbol({ size = 18 }) {
   return (
     <svg
       width={size}
@@ -91,9 +91,9 @@ export default function Navbar({ onLaunchDemo }) {
 
           {/* Centered Brand Capsule */}
           <div className="bb-nav-capsule bb-nav-capsule--center">
-            <a href="#" className="bb-brand-lockup" aria-label="GraphRCA Home">
-              <GraphRCASymbol size={22} />
-              <span className="bb-brand-wordmark">GraphRCA</span>
+            <a href="#" className="bb-brand-lockup" aria-label="Axon Home">
+              <AxonSymbol size={22} />
+              <span className="bb-brand-wordmark">Axon</span>
             </a>
           </div>
 
@@ -104,7 +104,7 @@ export default function Navbar({ onLaunchDemo }) {
                 type="button"
                 className="bb-nav-cta-btn"
                 onClick={() => handleDemoClick('rootcause')}
-                aria-label="Launch GraphRCA demo"
+                aria-label="Launch Axon demo"
               >
                 <span>Launch demo</span>
               </button>

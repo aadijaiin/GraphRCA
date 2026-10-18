@@ -1,4 +1,4 @@
-# Runbook: running GraphRCA locally
+# Runbook: running Axon locally
 
 Step-by-step setup from a clean clone, with the output you should expect at each step. If your output differs, check [Troubleshooting](#troubleshooting).
 
@@ -275,7 +275,7 @@ Open http://localhost:8000; the API serves the built UI. The container uses the 
 The same graph tools are available to any MCP client over stdio:
 
 ```bash
-claude mcp add graphrca -- /absolute/path/to/GraphRCA/.venv/bin/python /absolute/path/to/GraphRCA/backend/mcp_server.py
+claude mcp add axon -- /absolute/path/to/GraphRCA/.venv/bin/python /absolute/path/to/GraphRCA/backend/mcp_server.py
 ```
 
 Tools: `list_alerts`, `get_alert`, `trace_decision`, `find_amplifiers`, `equipment_status`, `find_expert`, `impact_of`, `connect_path`, `rank_people`, `search_artifacts`, `investigate`, `ingest_event`. Each takes a `tenant` (default `dashmart`). FalkorDB must be running.
@@ -318,7 +318,7 @@ OLLAMA_HOST=0.0.0.0:11434 OLLAMA_CONTEXT_LENGTH=16384 ollama serve
 vllm serve openai/gpt-oss-20b --max-model-len 16384 --port 8000
 ```
 
-Then on the machine running GraphRCA:
+Then on the machine running Axon:
 
 ```bash
 export LOCAL_MODEL_URL=http://<model-host>:11434/v1    # vLLM: http://<model-host>:8000/v1

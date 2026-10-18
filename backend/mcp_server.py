@@ -2,7 +2,7 @@
 agent) can investigate DashMart through FalkorDB. Every tool takes the tenant explicitly.
 
     python mcp_server.py                      # stdio transport
-    claude mcp add graphrca -- python /path/to/backend/mcp_server.py
+    claude mcp add axon -- python /path/to/backend/mcp_server.py
 """
 import os
 
@@ -15,7 +15,7 @@ from tools import TOOLS
 
 TENANTS = set(os.getenv("TENANTS", "dashmart,freshloop").split(","))
 
-server = MCPServer("graphrca", instructions=(
+server = MCPServer("axon", instructions=(
     "Graph tools over DashMart, a fictional quick-commerce company (synthetic data) stored in FalkorDB. "
     "Start from an alert id (list them with list_alerts), then trace_decision, find_amplifiers, equipment_status "
     "and find_expert. Or call investigate to run the full orchestrator with its department agents."))

@@ -189,7 +189,7 @@ export default function LandingPage({ onLaunchDemo }) {
             </h1>
 
             <p className="hero-editorial-subtitle bb-hero-subtitle">
-              GraphRCA links your tickets, docs, people and systems into one graph, so its agent can tell you what broke, why, and who should fix it.
+              Axon links your tickets, docs, people and systems into one graph, so its agent can tell you what broke, why, and who should fix it.
             </p>
 
             <div className="hero-action-row bb-hero-actions">
@@ -270,7 +270,7 @@ export default function LandingPage({ onLaunchDemo }) {
       <Divider variant="dashed" />
 
       {/* =========================================================
-          5. GRAPHRCA ARCHITECTURE SECTION (Prompt 4)
+          5. AXON ARCHITECTURE SECTION (Prompt 4)
           ========================================================= */}
       <ArchitectureSection />
 
@@ -282,7 +282,7 @@ export default function LandingPage({ onLaunchDemo }) {
       <Divider variant="dashed" />
 
       {/* =========================================================
-          6. GRAPHRCA PRODUCT SHOWCASE (Prompt 5)
+          6. AXON PRODUCT SHOWCASE (Prompt 5)
           ========================================================= */}
       <ProductPreviewShowcase onLaunchDemo={onLaunchDemo} />
 
