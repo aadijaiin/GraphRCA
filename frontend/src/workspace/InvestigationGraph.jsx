@@ -84,28 +84,30 @@ export default function InvestigationGraph({
     return { nodes, links };
   }, [active, steps, version]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // The simulation gets the company graph once. Changing graphData restarts the layout (the whole graph jumps),
+  // so the brain is drawn as an overlay and only the "Traced" filter, chosen by the user, rebuilds the data.
+  const tracedKey = filter === 'traced' && investigating ? version : 0;
   const data = useMemo(() => {
-    const keep = filter === 'traced' && investigating ? new Set(touchedNodes.current.keys()) : null;
-    const nodes = keep ? graph.nodes.filter((n) => keep.has(n.id)) : graph.nodes;
-    const ids = new Set(nodes.map((n) => n.id));
-    const links = graph.links.filter((l) => ids.has(idOf(l.source)) && ids.has(idOf(l.target)));
-    const blinks = brain.links.filter((l) => (idOf(l.source).startsWith('@') || ids.has(idOf(l.source)))
-      && (idOf(l.target).startsWith('@') || ids.has(idOf(l.target))));
-    return { nodes: [...nodes, ...brain.nodes], links: [...links, ...blinks] };
-  }, [graph, brain, filter, investigating, version]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (filter !== 'traced' || !investigating) return graph;
+    const keep = new Set(touchedNodes.current.keys());
+    return {
+      nodes: graph.nodes.filter((n) => keep.has(n.id)),
+      links: graph.links.filter((l) => keep.has(idOf(l.source)) && keep.has(idOf(l.target))),
+    };
+  }, [graph, filter, investigating, tracedKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fit = useCallback((ms = 500) => {
     const fg = fgRef.current;
     if (!fg) return;
-    if (investigating) fg.zoomToFit(ms, 60, (n) => n.virtual || touchedNodes.current.has(n.id));
+    if (investigating) fg.zoomToFit(ms, 80, (n) => touchedNodes.current.has(n.id));
     else fg.zoomToFit(ms, 40);
   }, [investigating, touchedNodes]);
 
   useEffect(() => {
     const fg = fgRef.current;
-    fg?.d3Force('charge')?.strength((n) => (n.virtual ? -260 : -32));
-    fg?.d3Force('link')?.distance((l) => (l.kind === 'dispatch' ? 70 : l.kind === 'depends' ? 90 : l.virtual ? 55 : 24));
-  }, [graph, brain]);
+    fg?.d3Force('charge')?.strength(-32);
+    fg?.d3Force('link')?.distance(24);
+  }, [graph]);
 
   useEffect(() => {
     if (!touchedCount) return undefined;
@@ -118,19 +120,24 @@ export default function InvestigationGraph({
   // beams: every edge the agents touch for the first time gets a light pulse; edges touched by the same step
   // (and steps of departments running in parallel) fire together, so parallel calls show as parallel beams
   const fired = useRef(new Set());
+  const brainBeams = useRef([]); // {key, start} for overlay links, animated in drawBrain
+  const anchor = useRef(null); // where the brain sits for this investigation (fixed, so it never slides)
   useEffect(() => {
-    if (!active) { fired.current = new Set(); return; }
+    if (!active) { fired.current = new Set(); brainBeams.current = []; anchor.current = null; return; }
     const fg = fgRef.current;
     if (!fg) return;
     for (const l of data.links) {
-      const k = l.key;
-      const isNew = !fired.current.has(k) && (l.virtual ? (l.kind !== 'depends') : touchedEdges.current.has(k));
-      if (!isNew) continue;
-      fired.current.add(k);
+      if (fired.current.has(l.key) || !touchedEdges.current.has(l.key)) continue;
+      fired.current.add(l.key);
       fg.emitParticle(l);
-      if (l.kind === 'dispatch') setTimeout(() => fg.emitParticle(l), 260);
     }
-  }, [data, version, active, touchedEdges]);
+    const now = performance.now();
+    for (const l of brain.links) {
+      if (fired.current.has(l.key) || l.kind === 'depends') continue;
+      fired.current.add(l.key);
+      brainBeams.current.push({ key: l.key, start: now });
+    }
+  }, [data, brain, version, active, touchedEdges]);
 
   const focusSet = useMemo(() => new Set(focusStep ? stepNodes.current.get(focusStep) || [] : []), [focusStep, version]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -215,6 +222,67 @@ export default function InvestigationGraph({
     ctx.restore();
   }, [touchedEdges, focusStep]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Brain overlay: orchestrator, department sub-brains, their links to queried data, and interdependency.
+  const drawBrain = useCallback((ctx, scale) => {
+    if (!active || !brain.nodes.length) return;
+    const pos = new Map(data.nodes.filter((n) => Number.isFinite(n.x)).map((n) => [n.id, n]));
+    const touched = [...touchedNodes.current.keys()].map((id) => pos.get(id)).filter(Boolean);
+    if (!touched.length) return;
+    if (!anchor.current) {
+      const xs = touched.map((n) => n.x); const ys = touched.map((n) => n.y);
+      anchor.current = { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: Math.min(...ys) - 70 };
+    }
+    const at = new Map([[BRAIN, { ...anchor.current }]]);
+    const depts = brain.nodes.filter((n) => n.id !== BRAIN);
+    // departments sit on one row under the orchestrator
+    depts.forEach((n, i) => at.set(n.id, { x: anchor.current.x + (i - (depts.length - 1) / 2) * 100, y: anchor.current.y + 40 }));
+    const end = (id) => at.get(id) || pos.get(id);
+    const now = performance.now();
+    const k = 1 / Math.max(scale * 0.7, 0.6);
+    ctx.save();
+    for (const l of brain.links) {
+      const a = end(l.source); const b = end(l.target);
+      if (!a || !b || !Number.isFinite(a.x) || !Number.isFinite(b.x)) continue;
+      ctx.globalAlpha = l.kind === 'depends' ? 0.8 : l.kind === 'dispatch' ? 0.7 : 0.28;
+      ctx.strokeStyle = l.kind === 'dispatch' || l.kind === 'depends' ? ACCENT : DEPT[l.source.slice(1)] || ACCENT;
+      ctx.lineWidth = (l.kind === 'dispatch' ? 1.2 : 0.7) * k;
+      ctx.setLineDash(l.kind === 'depends' ? [4 / scale, 3 / scale] : l.kind === 'dispatch' ? [] : [1 / scale, 2 / scale]);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      if (l.kind === 'depends') ctx.quadraticCurveTo((a.x + b.x) / 2, a.y + 24, b.x, b.y);
+      else ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    brainBeams.current = brainBeams.current.filter((bm) => now - bm.start < 1000);
+    for (const bm of brainBeams.current) {
+      const l = brain.links.find((x) => x.key === bm.key);
+      const a = l && end(l.source); const b = l && end(l.target);
+      if (!a || !b || !Number.isFinite(b.x)) continue;
+      const t = Math.min(1, (now - bm.start) / 900);
+      ctx.globalAlpha = 1 - Math.max(0, t - 0.85) / 0.15;
+      ctx.shadowColor = BEAM; ctx.shadowBlur = 10; ctx.fillStyle = BEAM;
+      ctx.beginPath(); ctx.arc(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, 2.4 * k, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    ctx.globalAlpha = 1;
+    for (const n of brain.nodes) {
+      const p = at.get(n.id);
+      const r = (n.id === BRAIN ? 8 : 6) * k;
+      const color = n.id === BRAIN ? ACCENT : DEPT[n.agent] || ACCENT;
+      const g = ctx.createRadialGradient(p.x, p.y, r * 0.4, p.x, p.y, r * 2.6);
+      g.addColorStop(0, `${color}66`); g.addColorStop(1, `${color}00`);
+      ctx.beginPath(); ctx.arc(p.x, p.y, r * 2.6, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
+      ctx.lineWidth = 1 / scale; ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.stroke();
+      const fs = Math.max(10 / scale, 2.6);
+      ctx.font = `600 ${fs}px "Geist", system-ui, sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillStyle = '#ffffff';
+      ctx.fillText(n.name, p.x, p.y - r - 2);
+    }
+    ctx.restore();
+  }, [active, brain, data, touchedNodes]);
+
   const legend = LEGEND.filter((k) => graph.nodes.some((n) => n.label === k));
 
   return <section className="panel graph-panel obsidian">
@@ -275,7 +343,8 @@ export default function InvestigationGraph({
         linkDirectionalParticleWidth={(l) => (l.kind === 'dispatch' ? 3.2 : 2.6)}
         linkDirectionalParticleSpeed={(l) => (l.virtual ? 0.018 : 0.012)}
         linkDirectionalParticleColor={(l) => (l.virtual && l.kind !== 'dispatch' ? DEPT[idOf(l.source).slice(1)] || BEAM : BEAM)}
-        onNodeClick={(n) => { if (!n.virtual) onNodeClick(n); }}
+        onRenderFramePost={drawBrain}
+        onNodeClick={onNodeClick}
         onNodeHover={(n) => setHovered(n?.id || null)}
         onBackgroundClick={() => setHovered(null)}
         warmupTicks={200}
