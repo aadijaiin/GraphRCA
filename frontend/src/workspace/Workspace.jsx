@@ -474,6 +474,7 @@ export default function Workspace({ onBackHome, autoStart }) {
           <div id="ws-graph">
             <InvestigationGraph
               graph={graph}
+              steps={run.steps}
               touchedNodes={inv.touchedNodes}
               touchedEdges={inv.touchedEdges}
               stepNodes={inv.stepNodes}
