@@ -58,7 +58,7 @@ export default function Navbar({ onLaunchDemo }) {
 
   const navLinks = [
     { label: 'Architecture', href: '#architecture' },
-    { label: 'Research', href: '#research' },
+    // { label: 'Research', href: '#research' },
     { label: 'FAQ', href: '#faq' },
   ];
 

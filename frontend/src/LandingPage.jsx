@@ -12,10 +12,8 @@ import RadialHeroNetwork from './components/RadialHeroNetwork.jsx';
 import ComplexitySection, { TechnicalComplexitySvg } from './components/ComplexitySection.jsx';
 import ArchitectureSection from './components/ArchitectureSection.jsx';
 import TrackFitSection from './components/TrackFitSection.jsx';
-import ProductPreviewShowcase from './components/ProductPreviewShowcase.jsx';
 import SpecializedAgentsSection from './components/SpecializedAgentsSection.jsx';
 import FaqSection from './components/FaqSection.jsx';
-import ResearchSection from './components/ResearchSection.jsx';
 import FinalCtaSection from './components/FinalCtaSection.jsx';
 import Footer from './components/Footer.jsx';
 
@@ -281,12 +279,7 @@ export default function LandingPage({ onLaunchDemo }) {
 
       <Divider variant="dashed" />
 
-      {/* =========================================================
-          6. AXON PRODUCT SHOWCASE (Prompt 5)
-          ========================================================= */}
-      <ProductPreviewShowcase onLaunchDemo={onLaunchDemo} />
 
-      <Divider variant="dashed" />
 
       {/* =========================================================
           7. SPECIALIZED AGENTS & EXPLAINABLE WORKFLOW (Prompt 6)
@@ -302,12 +295,7 @@ export default function LandingPage({ onLaunchDemo }) {
 
       <Divider variant="dashed" />
 
-      {/* =========================================================
-          9. RESEARCH FEED SECTION (Prompt 7 Part B)
-          ========================================================= */}
-      <ResearchSection />
-
-      <Divider variant="dashed" />
+      
 
       {/* =========================================================
           10. FINAL CTA SECTION (Prompt 7 Part C)
