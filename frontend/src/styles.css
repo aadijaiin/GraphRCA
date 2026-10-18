@@ -6918,3 +6918,21 @@ html, body {
 .evidence-card footer, .evidence-cites { margin-top: 8px; font: 400 10.5px/1.4 var(--font-mono); color: var(--am-ink-3); }
 .evidence-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font: 400 10.5px/1 var(--font-mono); color: var(--am-ink-3); }
 .evidence-meta code { color: var(--am-ink); }
+
+/* ---- readable investigation text (readable.jsx) ---- */
+.ent { border-bottom: 1px dotted var(--am-ink-3); cursor: help; }
+.ent .ent-id { font-family: var(--font-mono); font-size: 0.78em; color: var(--am-ink-3); margin-left: 0.35em; }
+.ent-idonly { font-family: var(--font-mono); font-size: 0.9em; }
+.step-sentence { margin-left: 6px; min-width: 0; }
+.hop-detail .tool-name { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--am-ink-3); margin-top: 2px; white-space: normal; word-break: break-word; }
+.query-toggle { margin-top: 6px; background: none; border: none; padding: 0; font: inherit; font-size: 11px; text-decoration: underline; cursor: pointer; color: var(--am-ink-2); }
+.query-explainer { margin-top: 8px; padding: 10px; border-radius: 6px; background: var(--am-surface-2); border: 1px solid var(--am-line); min-width: 0; max-width: 100%; }
+.query-plain { margin: 0 0 8px; font-size: 12.5px; line-height: 1.5; color: var(--am-ink); }
+.query-lines { display: grid; gap: 3px; min-width: 0; }
+.query-line { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 10px; align-items: start; min-width: 0; }
+.query-line code { font-family: var(--font-mono); font-size: 10.5px; white-space: pre-wrap; word-break: break-word; color: var(--am-ink-2); }
+.query-gloss { font-size: 11px; line-height: 1.4; color: var(--am-ink-3); font-style: italic; }
+.query-file { font-family: var(--font-mono); font-size: 10px; color: var(--am-ink-3); margin-top: 4px; }
+.thinking-secs { font-variant-numeric: tabular-nums; color: var(--am-ink-3); }
+.thinking-hint { color: var(--am-ink-3); font-size: 0.92em; }
+@media (max-width: 700px) { .query-line { grid-template-columns: 1fr; } .query-gloss { margin-bottom: 4px; } }

@@ -4,6 +4,7 @@ import {
   History, ListTree, Network, Play, Quote, RotateCcw, ShieldCheck, Sparkles, Users, Wrench, X,
 } from 'lucide-react';
 import InvestigationGraph from './InvestigationGraph.jsx';
+import { DEPARTMENTS, Glossary, QueryExplainer, Readable, stepSentence, tidy } from './readable.jsx';
 import { TENANT, edgeKey, useInvestigation } from './useInvestigation.js';
 
 const REPLAYS = new Set(['ALT-001']); // alerts with a recorded run under public/runs/
@@ -181,7 +182,27 @@ function AlertCards({ alerts, active, running, start, loadError }) {
   </section>;
 }
 
+function ThinkingRow({ run }) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => tick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const secs = run.thinkingSince ? Math.round((Date.now() - run.thinkingSince) / 1000) : null;
+  return <div className="thinking-row">
+    <span className="pulse-dot" />
+    {run.thinking.length
+      ? <span>
+          {[...new Set(run.thinking)].map(pretty).join(', ')} {run.thinking.length > 1 ? 'are' : 'is'} thinking…
+          {secs !== null && <span className="thinking-secs"> {secs}s</span>}
+          {secs > 45 && <span className="thinking-hint"> · slow reply from the model; it is retried automatically after 60s</span>}
+        </span>
+      : <span>{run.steps.length ? 'Working…' : 'Starting investigation…'}</span>}
+  </div>;
+}
+
 function Timeline({ run, active, running, focusStep, setFocusStep }) {
+  const [openQuery, setOpenQuery] = useState(null);
   const icon = (s) => (s.kind === 'memory' ? History : s.kind === 'task' ? Users : Wrench);
   return <section className="panel xray-panel" id="ws-investigation">
     <div className="panel-header xray-header">
@@ -194,14 +215,7 @@ function Timeline({ run, active, running, focusStep, setFocusStep }) {
 
     {!active && <p className="entity-empty">Pick an alert to start. Each step below is a real tool call against FalkorDB; hover one to see what it touched in the graph.</p>}
 
-    {running && (
-      <div className="thinking-row">
-        <span className="pulse-dot" />
-        {run.thinking.length
-          ? <span>{[...new Set(run.thinking)].map(pretty).join(', ')} {run.thinking.length > 1 ? 'are' : 'is'} thinking…</span>
-          : <span>{run.steps.length ? 'Working…' : 'Starting investigation…'}</span>}
-      </div>
-    )}
+    {running && <ThinkingRow run={run} />}
 
     {run.steps.length > 0 && (
       <div className="inspector-section-heading">
@@ -244,15 +258,24 @@ function Timeline({ run, active, running, focusStep, setFocusStep }) {
               <I size={13} />
               {s.kind === 'memory' && s.text}
               {s.kind === 'task' && <span className={`agent-chip a-${s.agent}`}>{pretty(s.agent)}</span>}
-              {s.kind === 'tool' && <><span className={`agent-chip a-${s.agent}`}>{pretty(s.agent)}</span><code className="tool-name">{s.tool}</code></>}
+              {s.kind === 'tool' && <><span className={`agent-chip a-${s.agent}`}>{pretty(s.agent)}</span>
+                <span className="step-sentence"><Readable text={stepSentence(s.tool, s.args)} /></span></>}
             </div>
             <div className="hop-detail">
-              {s.kind === 'memory' && s.detail}
-              {s.kind === 'task' && s.text}
-              {s.kind === 'tool' && <span className="tool-args">{formatArgs(s.args) || 'no arguments'}</span>}
+              {s.kind === 'memory' && (s.plan ? `Suggested plan: ${s.plan.map((d) => DEPARTMENTS[d] || d).join(', ')}` : s.detail)}
+              {s.kind === 'task' && <Readable text={s.text} />}
+              {s.kind === 'tool' && <>
+                <code className="tool-name" title="The tool the agent called, with its arguments">{s.tool}({formatArgs(s.args)})</code>
+                {s.tool !== 'submit_answer' && (
+                  <button type="button" className="query-toggle" onClick={(e) => { e.stopPropagation(); setOpenQuery(openQuery === s.key ? null : s.key); }}>
+                    {openQuery === s.key ? 'Hide query' : 'What it asked the graph'}
+                  </button>
+                )}
+                {openQuery === s.key && <QueryExplainer tool={s.tool} />}
+              </>}
             </div>
             {s.kind === 'task' && s.unverified?.length > 0 && (
-              <div className="hop-detail red-text">Report mentions unverified refs: {s.unverified.join(', ')}</div>
+              <div className="hop-detail red-text">The report mentions findings it did not produce ({s.unverified.join(', ')}); only its own findings count as evidence.</div>
             )}
           </div>
         </div>;
@@ -264,7 +287,7 @@ function Timeline({ run, active, running, focusStep, setFocusStep }) {
 function AnswerDock({ answer, findings, openSources, openFindings, focusNode }) {
   return <section className="answer-dock panel" aria-live="polite">
     <div className="answer-badge"><BrainCircuit size={12} /><span>ANSWER</span></div>
-    <div className="answer-text">{answer.summary}</div>
+    <div className="answer-text"><Readable text={answer.summary} /></div>
     {(answer.root_cause || answer.amplifier) && (
       <div className="answer-entities">
         {answer.root_cause && <button type="button" className="entity-chip cause" onClick={() => focusNode(answer.root_cause.id)}>
@@ -278,7 +301,7 @@ function AnswerDock({ answer, findings, openSources, openFindings, focusNode }) 
     <ol className="claim-list">
       {answer.claims.map((c, i) => (
         <li key={i}>
-          <p>{c.text}</p>
+          <p><Readable text={c.text} /></p>
           <div className="claim-refs">
             {c.sources?.length > 0 && (
               <button type="button" className="ref-button" onClick={() => openSources(c.sources, `Sources for claim ${i + 1}`)}>
@@ -298,7 +321,7 @@ function AnswerDock({ answer, findings, openSources, openFindings, focusNode }) 
         {answer.actions.map((a, i) => (
           <li key={i}>
             <Check size={12} />
-            <span>{a.text}</span>
+            <span><Readable text={a.text} /></span>
             <button type="button" className="ref-button plain" onClick={() => openFindings(a.finding_ids, `Findings behind action ${i + 1}`)}>{a.finding_ids.length}</button>
           </li>
         ))}
@@ -307,7 +330,7 @@ function AnswerDock({ answer, findings, openSources, openFindings, focusNode }) 
     <div className="answer-meta">
       <span className="grounded-pill"><ShieldCheck size={12} /> {plural(findings, 'finding')} · every claim cites one</span>
       {answer.dropped?.length > 0 && (
-        <span className="dropped-pill" title={answer.dropped.map((d) => `${d.kind}: ${d.reason}`).join('\n')}>
+        <span className="dropped-pill" title={answer.dropped.map((d) => `${tidy(d.kind)}${d.id ? ` ${d.id}` : ''}: ${d.reason}`).join('\n')}>
           {answer.dropped.length} removed by validator
         </span>
       )}
@@ -333,9 +356,9 @@ function Drawer({ drawer, close }) {
     {drawer.loading && <p className="entity-empty">Loading…</p>}
     {drawer.findings?.map((f) => (
       <article key={f.finding_id} className="evidence-card">
-        <div className="evidence-meta"><span className={`agent-chip a-${f.agent}`}>{pretty(f.agent)}</span><code>{f.tool}</code><span>{f.ref || f.finding_id}</span></div>
-        <p>{f.summary}</p>
-        {f.cites?.length > 0 && <div className="evidence-cites">cites {f.cites.join(', ')}</div>}
+        <div className="evidence-meta"><span className={`agent-chip a-${f.agent}`}>{pretty(f.agent)}</span><span>{stepSentence(f.tool, {})}</span><span>{f.ref || f.finding_id}</span></div>
+        <p><Readable text={f.summary} /></p>
+        {f.cites?.length > 0 && <div className="evidence-cites">Points to: <Readable text={f.cites.join(', ')} /></div>}
       </article>
     ))}
     {drawer.artifacts?.map((a) => (
@@ -439,7 +462,7 @@ export default function Workspace({ onBackHome, autoStart }) {
   const touched = inv.touchedNodes.current.size;
   const edges = inv.touchedEdges.current.size;
 
-  return <div className="app-shell">
+  return <Glossary.Provider value={nodeById}><div className="app-shell">
     <AppRail onBackHome={onBackHome} />
     <div className="app-frame">
       <Header onBackHome={onBackHome} online={online} active={active} model={run.model} backend={backend} setBackend={setBackend} models={models} />
@@ -471,7 +494,7 @@ export default function Workspace({ onBackHome, autoStart }) {
               {run.memories.length ? run.memories.map((m) => (
                 <li key={m.memory_id} className="pulse-row">
                   <span className={`tag ${m.kind === 'procedural' ? 'tag-violet' : 'tag-olive'}`}>{m.kind}</span>
-                  <span className="pulse-detail wrap">{m.content}</span>
+                  <span className="pulse-detail wrap"><Readable text={m.content} /></span>
                 </li>
               )) : run.done ? (
                 <li className="pulse-row">
@@ -505,5 +528,5 @@ export default function Workspace({ onBackHome, autoStart }) {
       </div>
     </div>
     {drawer && <Drawer drawer={drawer} close={() => setDrawer(null)} />}
-  </div>;
+  </div></Glossary.Provider>;
 }

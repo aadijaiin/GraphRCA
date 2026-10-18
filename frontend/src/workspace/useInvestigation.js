@@ -11,6 +11,7 @@ const EMPTY = {
   steps: [], // timeline: memory, tasks and tool calls in arrival order
   findings: [],
   thinking: [], // agents with a model call in flight
+  thinkingSince: null, // when the current wait for a model reply started (ms), for the elapsed timer
   answer: null,
   memories: [],
   done: false,
@@ -41,6 +42,7 @@ export function useInvestigation() {
           kind: "memory", key: `m${r.steps.length}`,
           text: d.plan ? `${d.memories.length} similar incident(s) recalled` : "No similar incident yet",
           detail: d.plan ? `Suggested plan: ${d.plan.departments.join(", ")}` : "Starting from the alert alone.",
+          plan: d.plan ? d.plan.departments : null,
         }] }));
         return;
       case "task_created":
@@ -53,12 +55,14 @@ export function useInvestigation() {
           ? { ...s, status: d.status || "done", report: d.report, unverified: d.unverified_refs || [] } : s)) }));
         return;
       case "model_started":
-        setRun((r) => ({ ...r, thinking: [...r.thinking, d.agent] }));
+        setRun((r) => ({ ...r, thinking: [...r.thinking, d.agent], thinkingSince: r.thinking.length ? r.thinkingSince : Date.now() }));
         return;
       case "model_turn":
         setRun((r) => {
           const i = r.thinking.indexOf(d.agent);
-          return i < 0 ? r : { ...r, thinking: r.thinking.filter((_, j) => j !== i) };
+          if (i < 0) return r;
+          const thinking = r.thinking.filter((_, j) => j !== i);
+          return { ...r, thinking, thinkingSince: thinking.length ? r.thinkingSince : null };
         });
         return;
       case "tool_call":
