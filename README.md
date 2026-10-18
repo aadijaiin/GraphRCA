@@ -9,7 +9,7 @@ When a dark store's delivery promise slips, the cause usually spans five teams: 
 |                     |                                                                                                                             |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | **Repository**      | https://github.com/aadijaiin/GraphRCA                                                                                       |
-| **Demo video**      | _add link_                                                                                                                  |
+| **Demo video**      | https://www.youtube.com/watch?v=bK8hti5df-g                                                                                                                  |
 | **Live deployment** | https://axon.aadijain.dev                                                                                                   |
 | **Tracks entered**  | **Track 03: Company Brain** (primary), Track 02: Agent Memory and Coordination, Track 01: Agents That Act on Connected Data |
 
