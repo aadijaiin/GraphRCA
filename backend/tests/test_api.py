@@ -36,3 +36,10 @@ def test_graph_down_is_a_clear_503(client, monkeypatch):
     monkeypatch.setattr(app_module, "run", down)
     r = client.get("/api/alerts?tenant=dashmart")
     assert r.status_code == 503 and "docker compose up -d falkordb" in r.json()["detail"]
+
+
+def test_queries_endpoint_serves_the_real_cypher(client):
+    q = client.get("/api/queries").json()
+    assert "MATCH (d:Decision)-[c:CHANGED]->(s)" in q["trace_decision"]["cypher"]
+    assert q["get_alert"]["file"] == "queries/alert_context.cypher"
+    assert not any(t.startswith("w_") for t in q)  # writes are not shown as investigation steps

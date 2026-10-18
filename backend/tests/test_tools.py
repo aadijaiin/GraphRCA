@@ -52,3 +52,12 @@ def test_touched_edges_are_real(graph):
         for e in TOOLS[name](graph, **args)["touched"]["edges"]:
             q = f"MATCH ({{id: $f}})-[r:{e['type']}]->({{id: $t}}) RETURN count(r)"
             assert g.ro_query(q, {"f": e["from"], "t": e["to"]}).result_set[0][0] >= 1, (name, e)
+
+
+def test_finding_summaries_read_as_plain_english(graph):
+    from state import summarize
+    s = summarize(TOOLS["trace_decision"](graph, alert_id="ALT-001"))
+    assert s.startswith("Vikram Sethi (Store Manager) moved the item") and "16 Oct 03:15 UTC" in s
+    assert "DEC-209" in s and "EQ-SD04-CHA1" in s and "open, no one assigned" in s  # ids kept, nothing lost
+    a = summarize(TOOLS["get_alert"](graph, alert_id="ALT-001"))
+    assert "promise time" in a and "promise_time_min" not in a
