@@ -6945,3 +6945,11 @@ html, body {
 .legend-line.dashed { border-top: 1.5px dashed #a882ff; }
 .legend-line.beam { border-top: 2px solid #ffc45c; box-shadow: 0 0 4px #ffc45c; }
 .obsidian-legend .floating-legend-items span { color: rgba(220, 221, 222, 0.85); }
+
+/* Navbar: keep the brand capsule truly centred whatever the side groups' widths (desktop; mobile keeps its flex layout) */
+@media (min-width: 960px) {
+  .bb-navbar-container { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .bb-nav-capsule--left { justify-self: start; }
+  .bb-nav-capsule--center { justify-self: center; }
+  .bb-nav-right-group { justify-self: end; }
+}
